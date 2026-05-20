@@ -1,0 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --pitch-900: #0a1a0f;
+  --pitch-800: #0f2516;
+  --pitch-700: #163520;
+  --pitch-600: #1d4a2c;
+  --grass-400: #4ade80;
+  --grass-500: #22c55e;
+  --amber-400: #fbbf24;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background-color: var(--pitch-900);
+  color: #f0fdf4;
+  font-family: 'DM Sans', sans-serif;
+  margin: 0;
+  min-height: 100vh;
+}
+
+.font-display { font-family: 'Bebas Neue', cursive; }
+
+/* Pitch stripe background */
+.pitch-bg {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255,255,255,0.02) 0px,
+    rgba(255,255,255,0.02) 1px,
+    transparent 1px,
+    transparent 60px
+  );
+}
+
+/* Glow effects */
+.glow-green {
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3), 0 0 60px rgba(34, 197, 94, 0.1);
+}
+.glow-amber {
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.3), 0 0 60px rgba(251, 191, 36, 0.1);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--pitch-900); }
+::-webkit-scrollbar-thumb { background: var(--pitch-600); border-radius: 3px; }
+
+/* Animate in */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.4s ease both; }
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(34,197,94,0.4); }
+  50% { box-shadow: 0 0 20px rgba(34,197,94,0.8); }
+}
+.live-pulse { animation: pulse-glow 2s ease-in-out infinite; }
