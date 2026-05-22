@@ -20,7 +20,7 @@ function resolveSlot(slot, resolved, standings) {
   if (!slot) return null;
 
   // Group position: any letter A-P followed by 1-4, e.g. "A1", "E3", "M2"
-  const gpMatch = slot.match(/^([A-P])([1-4])$/);
+  const gpMatch = slot.match(/^([A-Z])([1-4])$/);
   if (gpMatch) {
     const group = gpMatch[1];
     const pos   = parseInt(gpMatch[2]) - 1;

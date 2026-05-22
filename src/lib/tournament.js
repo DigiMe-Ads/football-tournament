@@ -5,14 +5,15 @@ export const MATCH_DURATION     = 16;
 export const BREAK_BETWEEN      = 4;
 
 // ─── AGE GROUPS ───────────────────────────────────────────────────────────────
-export const AGE_GROUPS = ['U10', 'U12', 'U14', 'U16'];
+export const AGE_GROUPS = ['U10', 'U12', 'U14', 'U16', 'Girls'];
 
 // Each age group gets its own set of group letters
 export const AGE_GROUP_LETTERS = {
-  U10: ['A', 'B', 'C', 'D'],
-  U12: ['E', 'F', 'G', 'H'],
-  U14: ['I', 'J', 'K', 'L'],
-  U16: ['M', 'N', 'O', 'P'],
+  U10:   ['A', 'B', 'C', 'D'],
+  U12:   ['E', 'F', 'G', 'H'],
+  U14:   ['I', 'J', 'K', 'L'],
+  U16:   ['M', 'N', 'O', 'P'],
+  Girls: ['Q', 'R', 'S', 'T'],
 };
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -267,7 +268,7 @@ export function buildKnockoutTemplate(letters) {
     cup:    { label: 'Cup',    icon: '🏆', rounds: cupRounds    },
     plate:  { label: 'Plate',  icon: '🥈', rounds: plateRounds  },
     shield: { label: 'Shield', icon: '🛡️', rounds: shieldRounds },
-    bowl:   { label: 'Bowl',   icon: '🥣', rounds: bowlRounds   },
+    bowl:   { label: 'Bowl',   icon: '🏅', rounds: bowlRounds   },
   };
 }
 

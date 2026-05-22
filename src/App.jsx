@@ -9,7 +9,23 @@ import LoginPage from './components/LoginPage';
 import TeamManager from './components/TeamManager';
 
 const KO_SEGMENTS = ['cup', 'plate', 'shield', 'bowl'];
-const KO_ICONS    = { cup: '🏆', plate: '🥈', shield: '🛡️', bowl: '🥣' };
+const KO_ICONS    = { cup: '🏆', plate: '🥈', shield: '🛡️', bowl: '🏅' };
+
+const AGE_SCHEME = {
+  U10:   { primary: '#ef4444', primaryLight: '#fca5a5', primaryDim: 'rgba(239,68,68,0.10)',   primaryRing: 'rgba(239,68,68,0.35)',   bgGlow: 'rgba(239,68,68,0.18)'   },
+  U12:   { primary: '#60a5fa', primaryLight: '#bfdbfe', primaryDim: 'rgba(96,165,250,0.10)',  primaryRing: 'rgba(96,165,250,0.35)',  bgGlow: 'rgba(96,165,250,0.18)'  },
+  U14:   { primary: '#4ade80', primaryLight: '#bbf7d0', primaryDim: 'rgba(74,222,128,0.10)',  primaryRing: 'rgba(74,222,128,0.35)',  bgGlow: 'rgba(74,222,128,0.18)'  },
+  U16:   { primary: '#facc15', primaryLight: '#fef08a', primaryDim: 'rgba(250,204,21,0.10)',  primaryRing: 'rgba(250,204,21,0.35)',  bgGlow: 'rgba(250,204,21,0.18)'  },
+  Girls: { primary: '#f472b6', primaryLight: '#fbcfe8', primaryDim: 'rgba(244,114,182,0.10)', primaryRing: 'rgba(244,114,182,0.35)', bgGlow: 'rgba(244,114,182,0.18)' },
+};
+
+function getChampion(finalId, knockoutMatches, teams) {
+  const m = knockoutMatches.find(m => m.id?.endsWith(`_${finalId}`) || m.id === finalId);
+  if (!m?.completed) return null;
+  const winnerId = m.penWinner
+    || (Number(m.homeScore) > Number(m.awayScore) ? m.homeTeamId : m.awayTeamId);
+  return teams.find(t => t.id === winnerId)?.name || null;
+}
 
 export default function App() {
   const { isAdmin, logout } = useAuth();
@@ -28,6 +44,14 @@ export default function App() {
     updateKnockoutMatch, resetKnockoutMatch,
     resetAll, hardReset,
   } = useTournament(ageGroup);
+
+  const scheme = AGE_SCHEME[ageGroup] || AGE_SCHEME.U10;
+
+  const cupChamp    = getChampion('CF1',   knockoutMatches, teams);
+  const plateChamp  = getChampion('PF1',   knockoutMatches, teams);
+  const shieldChamp = getChampion('SHFF1', knockoutMatches, teams);
+  const bowlChamp   = getChampion('BF1',   knockoutMatches, teams);
+  const hasChamps   = !!(cupChamp || plateChamp || shieldChamp || bowlChamp);
 
   const TABS = [
     ...(isAdmin ? [{ id: 'setup', label: 'Setup', icon: '⚙️' }] : []),
@@ -73,10 +97,29 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen pitch-bg">
+    <div
+      className="min-h-screen"
+      style={{
+        backgroundColor: '#0a0f1e',
+        backgroundImage: `
+          radial-gradient(ellipse at 50% 0%, ${scheme.bgGlow} 0%, transparent 55%),
+          radial-gradient(ellipse at 80% 80%, ${scheme.primaryDim} 0%, transparent 50%),
+          repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 80px)
+        `,
+        transition: 'background-image 0.5s ease',
+      }}
+    >
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 bg-kz-950/95 backdrop-blur-md border-b border-white/10">
+      <header
+        className="sticky top-0 z-40 backdrop-blur-md"
+        style={{ backgroundColor: 'rgba(10,15,30,0.96)', borderBottom: `1px solid ${scheme.primaryRing}` }}
+      >
+        {/* Colored top accent line */}
+        <div
+          className="h-0.5 w-full"
+          style={{ background: `linear-gradient(90deg, transparent 0%, ${scheme.primary} 30%, ${scheme.primaryLight} 50%, ${scheme.primary} 70%, transparent 100%)` }}
+        />
         <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 flex items-center justify-between gap-3">
 
           {/* Brand */}
@@ -97,8 +140,8 @@ export default function App() {
             <select
               value={ageGroup}
               onChange={e => { setAgeGroup(e.target.value); setTab('groups'); }}
-              className="bg-kz-900 border border-kz-gold/40 text-kz-gold text-sm rounded-lg px-2 py-1.5 sm:px-3 focus:outline-none focus:border-kz-gold cursor-pointer appearance-none"
-              style={{ backgroundColor: '#0d1530', colorScheme: 'dark' }}
+              className="bg-kz-900 border text-sm rounded-lg px-2 py-1.5 sm:px-3 focus:outline-none cursor-pointer appearance-none"
+              style={{ backgroundColor: '#0d1530', colorScheme: 'dark', borderColor: scheme.primaryRing, color: scheme.primary }}
             >
               {AGE_GROUPS.map(ag => (
                 <option key={ag} value={ag} style={{ backgroundColor: '#0d1530', color: '#F5A623' }}>
@@ -126,7 +169,7 @@ export default function App() {
         {/* Age group indicator strip */}
         <div className="max-w-7xl mx-auto px-3 sm:px-6 pb-0">
           <div className="flex items-center gap-2 py-1 border-b border-white/5">
-            <span className="text-kz-gold font-display tracking-wider text-sm">{ageGroup}</span>
+            <span className="font-display tracking-wider text-sm" style={{ color: scheme.primary }}>{ageGroup}</span>
             <span className="text-white/20 text-xs">·</span>
             <span className="text-white/30 text-xs">Groups: {letters.join(', ')}</span>
             {initialized && <span className="text-white/20 text-xs">· {groupMatches.length} group matches</span>}
@@ -138,8 +181,9 @@ export default function App() {
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                tab === t.id ? 'border-kz-gold text-kz-gold' : 'border-transparent text-white/40 hover:text-white/70'
-              }`}>
+                tab === t.id ? '' : 'border-transparent text-white/40 hover:text-white/70'
+              }`}
+              style={tab === t.id ? { borderColor: scheme.primary, color: scheme.primary } : {}}>
               <span className="text-sm">{t.icon}</span>
               <span className="font-display tracking-wider">{t.label}</span>
             </button>
@@ -191,15 +235,15 @@ export default function App() {
                 return (
                   <div key={letter} className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <h2 className="font-display text-3xl sm:text-4xl text-white tracking-widest">Group {letter}</h2>
-                      <div className="flex-1 h-px bg-white/10" />
+                      <h2 className="font-display text-3xl sm:text-4xl tracking-widest" style={{ color: scheme.primaryLight }}>Group {letter}</h2>
+                      <div className="flex-1 h-px" style={{ background: scheme.primaryRing }} />
                       <span className="text-white/25 text-xs">
                         {gMatches.filter(m => m.completed).length}/{gMatches.length} played
                       </span>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                      <StandingsTable standings={gStandings} group={letter} />
+                      <StandingsTable standings={gStandings} group={letter} scheme={scheme} />
                       <div className="space-y-3">
                         {Array.from({ length: maxRound }, (_, i) => i + 1).map(round => {
                           const roundMatches = gMatches.filter(m => m.round === round);
@@ -255,13 +299,47 @@ export default function App() {
                   {tab === 'cup'    && `🏆 Cup: Top 2 from each group. Winners advance; losers drop to Plate.`}
                   {tab === 'plate'  && `🥈 Plate: Cup Quarter Final losers compete for the Plate.`}
                   {tab === 'shield' && `🛡️ Shield: 3rd & 4th from all groups enter Shield Quarter Finals. Losers drop to Bowl.`}
-                  {tab === 'bowl'   && `🥣 Bowl: Shield Quarter Final losers compete for the Bowl.`}
+                  {tab === 'bowl'   && `🏅 Bowl: Shield Quarter Final losers compete for the Bowl.`}
                 </div>
               </>
             )}
           </div>
         )}
       </main>
+
+      {/* ── Champions Board ────────────────────────────────────────────────── */}
+      {initialized && hasChamps && (
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 mt-10 mb-2 fade-up">
+          <div className="flex items-center gap-3 mb-4">
+            <h2 className="font-display text-2xl sm:text-3xl tracking-widest" style={{ color: scheme.primary }}>
+              {ageGroup} Champions
+            </h2>
+            <div className="flex-1 h-px" style={{ background: scheme.primaryRing }} />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Cup',    icon: '🏆', champ: cupChamp    },
+              { label: 'Plate',  icon: '🥈', champ: plateChamp  },
+              { label: 'Shield', icon: '🛡️', champ: shieldChamp },
+              { label: 'Bowl',   icon: '🏅', champ: bowlChamp   },
+            ].map(({ label, icon, champ }) => (
+              <div
+                key={label}
+                className={`rounded-xl border p-4 text-center transition-all ${champ ? 'bg-white/5 border-white/15' : 'bg-black/10 border-white/5 opacity-40'}`}
+              >
+                <div className="text-3xl mb-2">{icon}</div>
+                <div className="font-display text-xs tracking-widest text-white/40 mb-1.5">{label}</div>
+                <div
+                  className="font-display text-sm sm:text-base tracking-wider truncate"
+                  style={{ color: champ ? scheme.primaryLight : 'rgba(255,255,255,0.25)' }}
+                >
+                  {champ || '—'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <footer className="mt-12 py-6 border-t border-white/5 text-center text-white/15 text-xs">
         <p className="font-display tracking-widest text-sm text-white/20">KICKERZ CUP 2026</p>

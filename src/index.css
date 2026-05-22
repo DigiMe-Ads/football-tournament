@@ -65,3 +65,37 @@ body {
   background-clip: text;
   animation: shimmer 3s linear infinite;
 }
+
+/* ── Firework particles ───────────────────────────────────────────── */
+@keyframes fw-fly {
+  0%   { transform: translate(0, 0) scale(1.4); opacity: 1; }
+  80%  { opacity: 0.6; }
+  100% { transform: translate(var(--fw-x, 0px), var(--fw-y, -60px)) scale(0); opacity: 0; }
+}
+.fw-particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: fw-fly var(--fw-dur, 1.5s) ease-out var(--fw-delay, 0s) infinite both;
+}
+
+/* ── Crown float ──────────────────────────────────────────────────── */
+@keyframes crown-float {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50%       { transform: translateY(-7px) rotate(4deg); }
+}
+.crown-float {
+  display: inline-block;
+  animation: crown-float 2.2s ease-in-out infinite;
+}
+
+/* ── Winner card glow pulse ───────────────────────────────────────── */
+@keyframes winner-pulse {
+  0%, 100% { box-shadow: 0 0 18px var(--glow-c, rgba(255,215,0,0.25)), 0 0 40px var(--glow-c, rgba(255,215,0,0.10)); }
+  50%       { box-shadow: 0 0 32px var(--glow-c, rgba(255,215,0,0.45)), 0 0 70px var(--glow-c, rgba(255,215,0,0.20)); }
+}
+.winner-glow {
+  animation: winner-pulse 2.5s ease-in-out infinite;
+}

@@ -1,8 +1,14 @@
-export default function StandingsTable({ standings, group }) {
+export default function StandingsTable({ standings, group, scheme }) {
+  const s = scheme || {
+    primary: '#F5A623',
+    primaryLight: '#f7bc55',
+    primaryDim: 'rgba(43,78,187,0.10)',
+  };
+
   return (
     <div className="rounded-xl overflow-hidden border border-white/10 bg-black/20">
       <div className="px-4 py-2.5 bg-white/5 border-b border-white/10">
-        <span className="font-display text-xl text-kz-400 tracking-wider">Group {group}</span>
+        <span className="font-display text-xl tracking-wider" style={{ color: s.primaryLight }}>Group {group}</span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm min-w-[420px]">
@@ -23,7 +29,11 @@ export default function StandingsTable({ standings, group }) {
           </thead>
           <tbody>
             {standings.map((row, i) => (
-              <tr key={row.teamId} className={`border-b border-white/5 last:border-0 transition-colors ${i < 2 ? 'bg-kz/10' : ''}`}>
+              <tr
+                key={row.teamId}
+                className="border-b border-white/5 last:border-0 transition-colors"
+                style={{ background: i < 2 ? s.primaryDim : 'transparent' }}
+              >
                 <td className="px-3 py-2.5 text-white/30 font-mono text-xs">{i + 1}</td>
                 <td className="px-3 py-2.5 font-medium text-white/90 max-w-[100px] truncate">{row.teamName}</td>
                 <td className="text-center px-2 py-2.5 text-white/60 font-mono text-xs">{row.played}</td>
@@ -36,10 +46,10 @@ export default function StandingsTable({ standings, group }) {
                   {row.gd > 0 ? '+' : ''}{row.gd}
                 </td>
                 <td className="text-center px-2 py-2.5 font-bold text-white">{row.points}</td>
-                <td className={`text-center px-2 py-2.5 text-xs font-semibold ${
-                  i === 0 || i === 1 ? 'text-kz-gold' :
-                  i === 2 || i === 3 ? 'text-violet-400' : 'text-white/20'
-                }`}>
+                <td
+                  className="text-center px-2 py-2.5 text-xs font-semibold"
+                  style={{ color: i < 2 ? s.primary : i < 4 ? '#a78bfa' : 'rgba(255,255,255,0.2)' }}
+                >
                   {i < 2 ? 'Cup' : i < 4 ? 'Shield' : ''}
                 </td>
               </tr>
@@ -52,12 +62,12 @@ export default function StandingsTable({ standings, group }) {
       </div>
       <div className="px-4 py-2 border-t border-white/5 flex gap-4 flex-wrap">
         <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-kz/60" />
-          <span className="text-xs text-white/30">1st–2nd → Cup</span>
+          <div className="w-2 h-2 rounded-full" style={{ background: s.primary }} />
+          <span className="text-xs text-white/30">1st–2nd → Cup / Plate</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-violet-400/50" />
-          <span className="text-xs text-white/30">3rd–4th → Shield</span>
+          <span className="text-xs text-white/30">3rd–4th → Shield / Bowl</span>
         </div>
       </div>
     </div>

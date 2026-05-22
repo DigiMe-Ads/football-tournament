@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Chanka\\\\DigiMe Ads\\\\football-tournament\" -Depth 2 -Exclude \"node_modules\",\".git\",\".qodo\" -Force | Where-Object {$_.PSIsContainer -or $_.Extension -in @\\('.jsx','.js','.json','.html','.css'\\)} | Select-Object -Property @{n=\"Type\";e={if\\($_.PSIsContainer\\){\"DIR\"} else {$_.Extension}}}, Name, FullName | Sort-Object FullName)"
+    ]
+  }
+}
