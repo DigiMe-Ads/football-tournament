@@ -124,7 +124,7 @@ export default function App() {
 
           {/* Brand */}
           <div className="flex items-center gap-3 min-w-0">
-            <img src="/logo.png" alt="Kickerz Logo" className="w-20 h-20 sm:w-25 sm:h-25" />
+            <img src="/logo.png" alt="Kickerz Logo" className="w-[90px] h-[90px] sm:w-[120px] sm:h-[120px]" />
             <div className="min-w-0">
               <h1 className="font-display text-lg sm:text-xl leading-none tracking-widest">
                 <span className="text-white">KICKERZ </span>
