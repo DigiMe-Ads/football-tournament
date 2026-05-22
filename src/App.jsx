@@ -53,10 +53,12 @@ export default function App() {
   const bowlChamp   = getChampion('BF1',   knockoutMatches, teams);
   const hasChamps   = !!(cupChamp || plateChamp || shieldChamp || bowlChamp);
 
+  const koSegments = ageGroup === 'Girls' ? ['cup'] : KO_SEGMENTS;
+
   const TABS = [
     ...(isAdmin ? [{ id: 'setup', label: 'Setup', icon: '⚙️' }] : []),
     { id: 'groups', label: 'Groups', icon: '⚽' },
-    ...KO_SEGMENTS.map(s => ({ id: s, label: knockoutTemplate?.[s]?.label || s, icon: KO_ICONS[s] })),
+    ...koSegments.map(s => ({ id: s, label: knockoutTemplate?.[s]?.label || s, icon: KO_ICONS[s] })),
   ];
 
   // ── Loading ───────────────────────────────────────────────────────────────
@@ -243,7 +245,7 @@ export default function App() {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                      <StandingsTable standings={gStandings} group={letter} scheme={scheme} />
+                      <StandingsTable standings={gStandings} group={letter} scheme={scheme} qualifyTop={ageGroup === 'Girls' ? 4 : 2} />
                       <div className="space-y-3">
                         {Array.from({ length: maxRound }, (_, i) => i + 1).map(round => {
                           const roundMatches = gMatches.filter(m => m.round === round);
@@ -271,7 +273,7 @@ export default function App() {
         )}
 
         {/* Knockout tabs */}
-        {KO_SEGMENTS.includes(tab) && (
+        {koSegments.includes(tab) && (
           <div className="space-y-5 fade-up">
             {adminBar}
             {!initialized || !knockoutTemplate ? (
@@ -294,6 +296,7 @@ export default function App() {
                   onSave={updateKnockoutMatch}
                   onReset={resetKnockoutMatch}
                   teams={teams}
+                  scheme={scheme}
                 />
                 <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-white/35 text-xs leading-relaxed">
                   {tab === 'cup'    && `🏆 Cup: Top 2 from each group. Winners advance; losers drop to Plate.`}

@@ -141,8 +141,8 @@ export function useTournament(ageGroup) {
   );
 
   const knockoutTemplate = useMemo(
-    () => activeLetters.length >= 2 ? buildKnockoutTemplate(activeLetters) : null,
-    [activeLetters.join('')]
+    () => activeLetters.length >= 2 ? buildKnockoutTemplate(activeLetters, ageGroup) : null,
+    [activeLetters.join(''), ageGroup]
   );
 
   // ── Resolve knockouts ────────────────────────────────────────────────────
@@ -200,7 +200,7 @@ export function useTournament(ageGroup) {
     // Knockout stubs
     const usedLetters = letters.filter(l => teams.some(t => t.group === l));
     if (usedLetters.length >= 2) {
-      const template = buildKnockoutTemplate(usedLetters);
+      const template = buildKnockoutTemplate(usedLetters, ageGroup);
       for (const [segKey, segVal] of Object.entries(template)) {
         for (const round of segVal.rounds) {
           for (const match of round.matches) {

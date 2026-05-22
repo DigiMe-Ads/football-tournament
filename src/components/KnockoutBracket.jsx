@@ -62,9 +62,12 @@ function FireworkBurst() {
   );
 }
 
-export default function KnockoutBracket({ segment, segmentData, knockoutMatches, isAdmin, onSave, onReset, teams }) {
+export default function KnockoutBracket({ segment, segmentData, knockoutMatches, isAdmin, onSave, onReset, teams, scheme }) {
   const style = segStyles[segment];
   if (!segmentData || !style) return null;
+
+  const outerBorder = scheme?.primaryRing ?? style.border;
+  const winnerLabel = segment === 'cup' ? `${segmentData.label} Champion` : `${segmentData.label} Winner`;
 
   function findMatch(templateId) {
     return knockoutMatches.find(m => m.id === templateId || m.id?.endsWith(`_${templateId}`));
@@ -83,7 +86,7 @@ export default function KnockoutBracket({ segment, segmentData, knockoutMatches,
     <div
       className="rounded-2xl border p-4 sm:p-6"
       style={{
-        borderColor: style.border,
+        borderColor: outerBorder,
         background: `
           radial-gradient(ellipse at 0% 0%, ${style.bg1} 0%, transparent 55%),
           radial-gradient(ellipse at 100% 100%, ${style.bg2} 0%, transparent 55%),
@@ -165,11 +168,11 @@ export default function KnockoutBracket({ segment, segmentData, knockoutMatches,
               {/* Content */}
               <div className="relative z-10">
                 <span className="crown-float text-5xl sm:text-6xl block mb-3">👑</span>
-                <p className="text-white/50 text-[10px] uppercase tracking-[0.2em] font-semibold mb-2">
-                  {segmentData.label} Champion
+                <p className="text-white/50 text-[11px] uppercase tracking-[0.2em] font-semibold mb-2">
+                  {winnerLabel}
                 </p>
                 <p
-                  className="font-display text-2xl sm:text-3xl tracking-wider leading-tight"
+                  className="font-display text-3xl sm:text-4xl tracking-wider leading-tight"
                   style={{ color: style.titleHex }}
                 >
                   {winnerName}
