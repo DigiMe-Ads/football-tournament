@@ -72,7 +72,7 @@ export default function StandingsTable({ standings, group, scheme, qualifyTop = 
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full" style={{ background: s.primary }} />
           <span className="text-xs text-white/30">
-            {isGirls ? '1st–4th → Cup' : '1st–2nd → Cup / Plate'}
+            {isGirls ? '1st vs 4th · 2nd vs 3rd → Cup Semi Finals' : '1st–2nd → Cup / Plate'}
           </span>
         </div>
         {!isGirls && (
