@@ -140,10 +140,9 @@ export function useTournament(ageGroup) {
     [teams, letters.join('')]
   );
 
-  const minGroups = ageGroup === 'Girls' ? 1 : 2;
   const knockoutTemplate = useMemo(
-    () => activeLetters.length >= minGroups ? buildKnockoutTemplate(activeLetters, ageGroup) : null,
-    [activeLetters.join(''), ageGroup, minGroups]
+    () => activeLetters.length >= 2 ? buildKnockoutTemplate(activeLetters, ageGroup) : null,
+    [activeLetters.join(''), ageGroup]
   );
 
   // ── Resolve knockouts ────────────────────────────────────────────────────

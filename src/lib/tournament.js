@@ -13,7 +13,7 @@ export const AGE_GROUP_LETTERS = {
   U12:   ['E', 'F', 'G', 'H'],
   U14:   ['I', 'J', 'K', 'L'],
   U16:   ['M', 'N', 'O', 'P'],
-  Girls: ['Q'],
+  Girls: ['Q', 'R'],
 };
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -153,15 +153,22 @@ export function calculateStandings(groupMatches, group, teams) {
 
 // ─── GIRLS KNOCKOUT (Cup only, top 4 from 2 groups → QF → SF → Final) ────────
 function buildGirlsKnockoutTemplate(letters) {
-  const [g] = letters;
-  // 1 group of 5: top 4 seed directly into SFs — 1st vs 4th, 2nd vs 3rd
+  const [g1, g2] = letters;
+  // 2 groups of 5: top 4 from each group cross-seed into QFs
+  // Q1 vs R4, R1 vs Q4, Q2 vs R3, R2 vs Q3 → SFs → Final
   return {
     cup: {
       label: 'Cup', icon: '🏆',
       rounds: [
+        { id: 'cup-qf', label: 'Quarter Finals', matches: [
+          { id: 'CQF1', homeSlot: `${g1}1`, awaySlot: `${g2}4` },
+          { id: 'CQF2', homeSlot: `${g2}1`, awaySlot: `${g1}4` },
+          { id: 'CQF3', homeSlot: `${g1}2`, awaySlot: `${g2}3` },
+          { id: 'CQF4', homeSlot: `${g2}2`, awaySlot: `${g1}3` },
+        ]},
         { id: 'cup-sf', label: 'Semi Finals', matches: [
-          { id: 'CSF1', homeSlot: `${g}1`, awaySlot: `${g}4` },
-          { id: 'CSF2', homeSlot: `${g}2`, awaySlot: `${g}3` },
+          { id: 'CSF1', homeSlot: 'W:CQF1', awaySlot: 'W:CQF2' },
+          { id: 'CSF2', homeSlot: 'W:CQF3', awaySlot: 'W:CQF4' },
         ]},
         { id: 'cup-f', label: 'Final', matches: [
           { id: 'CF1', homeSlot: 'W:CSF1', awaySlot: 'W:CSF2' },
