@@ -94,20 +94,23 @@ function buildRRRounds(teams) {
   const n = teams.length;
   if (n < 2) return [];
 
-  // Standard round-robin rotation algorithm
-  const list = [...teams];
+  // For odd counts add a null bye to make the size even.
+  // The rotation then naturally gives each team exactly one bye per cycle,
+  // and every pair appears exactly once — no duplicates.
+  const list = n % 2 !== 0 ? [...teams, null] : [...teams];
+  const m = list.length; // always even
   const rounds = [];
-  const iters = n % 2 === 0 ? n - 1 : n;
 
-  for (let r = 0; r < iters; r++) {
+  for (let r = 0; r < m - 1; r++) {
     const round = [];
-    const half = Math.floor(n / 2);
-    for (let i = 0; i < half; i++) {
-      round.push([list[i], list[n - 1 - i]]);
+    for (let i = 0; i < m / 2; i++) {
+      const home = list[i];
+      const away = list[m - 1 - i];
+      if (home !== null && away !== null) round.push([home, away]);
     }
-    rounds.push(round);
-    // Rotate: keep first fixed, rotate rest
-    const last = list.splice(n - 1, 1)[0];
+    if (round.length > 0) rounds.push(round);
+    // Keep position 0 fixed, rotate the rest
+    const last = list.splice(m - 1, 1)[0];
     list.splice(1, 0, last);
   }
   return rounds;

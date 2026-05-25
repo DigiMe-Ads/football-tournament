@@ -2,18 +2,35 @@ import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginPage({ onClose }) {
-  const { login } = useAuth();
-  const [email,    setEmail]    = useState('');
+  const { loginWithUsername } = useAuth();
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
 
   async function handleSubmit(e) {
-    e.preventDefault(); setError('');
+    e.preventDefault();
+    setError('');
     setLoading(true);
-    try { await login(email, password); onClose?.(); }
-    catch { setError('Invalid email or password.'); }
-    finally { setLoading(false); }
+    try {
+      await loginWithUsername(username.trim(), password);
+      onClose?.();
+    } catch (err) {
+      const code = err.message ?? '';
+      if (code === 'no-user') {
+        setError('Username not found.');
+      } else if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+        setError('Incorrect password.');
+      } else if (code === 'auth/user-not-found' || code === 'auth/invalid-email') {
+        setError('No account found — check the email in your Firestore admins document.');
+      } else if (code === 'auth/too-many-requests') {
+        setError('Too many attempts. Try again in a few minutes.');
+      } else {
+        setError('Login failed. Check your username and password.');
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -28,18 +45,34 @@ export default function LoginPage({ onClose }) {
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-white/40 text-xs uppercase tracking-wider mb-1.5 block">Email</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
+              <label className="text-white/40 text-xs uppercase tracking-wider mb-1.5 block">Username</label>
+              <input
+                type="text"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                required
+                autoComplete="username"
                 className="w-full bg-black/40 border border-white/15 rounded-xl text-white px-4 py-3 focus:outline-none focus:border-kz transition-colors"
-                placeholder="admin@kickerz.com" />
+                placeholder="Username"
+              />
             </div>
             <div>
               <label className="text-white/40 text-xs uppercase tracking-wider mb-1.5 block">Password</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
                 className="w-full bg-black/40 border border-white/15 rounded-xl text-white px-4 py-3 focus:outline-none focus:border-kz transition-colors"
-                placeholder="••••••••" />
+                placeholder="••••••••"
+              />
             </div>
-            {error && <p className="text-red-400 text-sm bg-red-900/20 border border-red-500/25 rounded-lg px-3 py-2">{error}</p>}
+            {error && (
+              <p className="text-red-400 text-sm bg-red-900/20 border border-red-500/25 rounded-lg px-3 py-2">
+                {error}
+              </p>
+            )}
             <button type="submit" disabled={loading}
               className="w-full bg-kz hover:bg-kz-400 disabled:opacity-50 text-white font-semibold rounded-xl py-3 transition-colors mt-1">
               {loading ? 'Signing in…' : 'Sign In'}

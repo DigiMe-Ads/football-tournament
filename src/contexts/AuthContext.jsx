@@ -4,7 +4,9 @@ import {
   signOut,
   onAuthStateChanged,
 } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { auth } from '../lib/firebase';
+import { db } from '../lib/firebase';
 
 const AuthContext = createContext(null);
 
@@ -16,13 +18,24 @@ export function AuthProvider({ children }) {
     return unsub;
   }, []);
 
-  const login = (email, password) =>
-    signInWithEmailAndPassword(auth, email, password);
+  // Look up the email stored for this username in Firestore, then sign in.
+  const loginWithUsername = async (username, password) => {
+    const snap = await getDoc(doc(db, 'admins', username));
+    if (!snap.exists()) throw new Error('no-user');
+    const { email } = snap.data();
+    if (!email) throw new Error('no-email');
+    try {
+      return await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+      // Surface the Firebase error code so LoginPage can show a useful message
+      throw new Error(err.code ?? 'auth/unknown');
+    }
+  };
 
   const logout = () => signOut(auth);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin: !!user, loading: user === undefined }}>
+    <AuthContext.Provider value={{ user, loginWithUsername, logout, isAdmin: !!user, loading: user === undefined }}>
       {children}
     </AuthContext.Provider>
   );

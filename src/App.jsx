@@ -257,7 +257,8 @@ export default function App() {
                                 {roundMatches.map(match => (
                                   <MatchCard key={match.id} match={match} isAdmin={isAdmin}
                                     onSave={updateGroupMatch} onReset={resetGroupMatch}
-                                    colorScheme="group" teams={teams} />
+                                    colorScheme="group" teams={teams}
+                                    showTime={ageGroup !== 'Girls'} />
                                 ))}
                               </div>
                             </div>
