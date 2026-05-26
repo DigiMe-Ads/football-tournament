@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   collection, doc, getDocs, setDoc, updateDoc,
   onSnapshot, writeBatch, deleteDoc, query, where,
+  serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import {
@@ -14,6 +15,7 @@ import {
 const MATCHES_COL  = 'matches';
 const KNOCKOUT_COL = 'knockouts';
 const TEAMS_COL    = 'teams';
+const BACKUPS_COL  = 'backups';
 
 // ─── Resolve a single slot ────────────────────────────────────────────────────
 function resolveSlot(slot, resolved, standings) {
@@ -272,6 +274,75 @@ const resetKnockoutMatch = useCallback(async (matchId) => {
   });
 }, [ageGroup]);
 
+  // ── Backup & restore ─────────────────────────────────────────────────────
+  const createBackup = useCallback(async (label = 'Manual backup') => {
+    const [tSnap, mSnap, kSnap] = await Promise.all([
+      getDocs(query(collection(db, TEAMS_COL),    where('ageGroup', '==', ageGroup))),
+      getDocs(query(collection(db, MATCHES_COL),  where('ageGroup', '==', ageGroup))),
+      getDocs(query(collection(db, KNOCKOUT_COL), where('ageGroup', '==', ageGroup))),
+    ]);
+    const backupDoc = {
+      ageGroup,
+      label,
+      timestamp: serverTimestamp(),
+      // Store full Firestore doc IDs alongside data so restore is exact
+      teams:     tSnap.docs.map(d => ({ _docId: d.id, ...d.data() })),
+      matches:   mSnap.docs.map(d => ({ ...d.data(), id: d.id })),
+      knockouts: kSnap.docs.map(d => ({ ...d.data(), id: d.id })),
+    };
+    const ref = doc(collection(db, BACKUPS_COL));
+    await setDoc(ref, backupDoc);
+    return ref.id;
+  }, [ageGroup]);
+
+  const fetchBackups = useCallback(async () => {
+    const snap = await getDocs(
+      query(collection(db, BACKUPS_COL), where('ageGroup', '==', ageGroup))
+    );
+    return snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (b.timestamp?.seconds ?? 0) - (a.timestamp?.seconds ?? 0))
+      .slice(0, 15);
+  }, [ageGroup]);
+
+  const restoreFromBackup = useCallback(async (backup) => {
+    // Delete current data for this age group
+    const [tSnap, mSnap, kSnap] = await Promise.all([
+      getDocs(query(collection(db, TEAMS_COL),    where('ageGroup', '==', ageGroup))),
+      getDocs(query(collection(db, MATCHES_COL),  where('ageGroup', '==', ageGroup))),
+      getDocs(query(collection(db, KNOCKOUT_COL), where('ageGroup', '==', ageGroup))),
+    ]);
+
+    // Split into batches of 400 to stay under Firestore's 500-op limit
+    const ops = [];
+    tSnap.docs.forEach(d => ops.push({ type: 'delete', ref: d.ref }));
+    mSnap.docs.forEach(d => ops.push({ type: 'delete', ref: d.ref }));
+    kSnap.docs.forEach(d => ops.push({ type: 'delete', ref: d.ref }));
+
+    // Restore from backup
+    (backup.teams || []).forEach(t => {
+      const { _docId, ...data } = t;
+      ops.push({ type: 'set', ref: doc(db, TEAMS_COL, _docId), data });
+    });
+    (backup.matches || []).forEach(m => {
+      ops.push({ type: 'set', ref: doc(db, MATCHES_COL, m.id), data: m });
+    });
+    (backup.knockouts || []).forEach(k => {
+      const koDocId = k.docId || k.id;
+      ops.push({ type: 'set', ref: doc(db, KNOCKOUT_COL, koDocId), data: k });
+    });
+
+    const CHUNK = 400;
+    for (let i = 0; i < ops.length; i += CHUNK) {
+      const batch = writeBatch(db);
+      ops.slice(i, i + CHUNK).forEach(op => {
+        if (op.type === 'delete') batch.delete(op.ref);
+        else batch.set(op.ref, op.data);
+      });
+      await batch.commit();
+    }
+  }, [ageGroup]);
+
   const resetAll = useCallback(async () => {
     const batch = writeBatch(db);
     const [gSnap, kSnap] = await Promise.all([
@@ -290,8 +361,9 @@ const resetKnockoutMatch = useCallback(async (matchId) => {
   }, [ageGroup]);
 
   const hardReset = useCallback(async () => {
+    await createBackup('Auto (before hard reset)');
     await initializeTournament();
-  }, [initializeTournament]);
+  }, [createBackup, initializeTournament]);
 
   return {
     teams, groupMatches,
@@ -304,5 +376,6 @@ const resetKnockoutMatch = useCallback(async (matchId) => {
     updateGroupMatch,    resetGroupMatch,
     updateKnockoutMatch, resetKnockoutMatch,
     resetAll,            hardReset,
+    createBackup, fetchBackups, restoreFromBackup,
   };
 }

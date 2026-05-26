@@ -13,6 +13,7 @@ export default function MatchCard({
   match, isAdmin, onSave, onReset,
   colorScheme = 'group', showTime = true,
   teams = [], isKnockout = false,
+  groupLabel = null,
 }) {
   const [editing, setEditing] = useState(false);
   const [hs,  setHs]  = useState('');
@@ -61,10 +62,10 @@ export default function MatchCard({
 
   return (
     <div className={`relative rounded-xl border bg-gradient-to-br ${style.card} p-3 sm:p-4 transition-all ${match.completed ? '' : tbd ? 'opacity-50' : 'opacity-80 hover:opacity-100'}`}>
-      {/* Time */}
-      {showTime && match.time && (
+      {/* Time + optional group label */}
+      {showTime && (match.time || groupLabel) && (
         <span className="absolute -top-2.5 left-3 bg-kz-950 border border-white/10 text-white/50 text-xs font-mono px-2 py-0.5 rounded-full">
-          {match.time}
+          {match.time}{groupLabel ? ` · ${groupLabel}` : ''}
         </span>
       )}
       {/* Status */}

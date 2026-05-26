@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 .env
 .env.local
+k6.exe
+script.js

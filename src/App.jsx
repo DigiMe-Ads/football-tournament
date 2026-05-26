@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import { useTournament } from './hooks/useTournament';
 import { AGE_GROUPS } from './lib/tournament';
@@ -6,6 +6,8 @@ import MatchCard from './components/MatchCard';
 import StandingsTable from './components/StandingsTable';
 import KnockoutBracket from './components/KnockoutBracket';
 import LoginPage from './components/LoginPage';
+import ExportButton from './components/ExportButton';
+import BackupRestorePanel from './components/BackupRestorePanel';
 import TeamManager from './components/TeamManager';
 
 const KO_SEGMENTS = ['cup', 'plate', 'shield', 'bowl'];
@@ -33,6 +35,7 @@ export default function App() {
   const [tab,        setTab]        = useState('groups');
   const [showLogin,  setShowLogin]  = useState(false);
   const [resetting,  setResetting]  = useState(false);
+  const [groupSort,  setGroupSort]  = useState('group'); // 'group' | 'time'
 
   const {
     teams, groupMatches, knockoutMatches, knockoutTemplate,
@@ -43,7 +46,10 @@ export default function App() {
     updateGroupMatch, resetGroupMatch,
     updateKnockoutMatch, resetKnockoutMatch,
     resetAll, hardReset,
+    createBackup, fetchBackups, restoreFromBackup,
   } = useTournament(ageGroup);
+
+  useEffect(() => { setGroupSort('group'); }, [ageGroup]);
 
   const scheme = AGE_SCHEME[ageGroup] || AGE_SCHEME.U10;
 
@@ -83,17 +89,26 @@ export default function App() {
   }
 
   const adminBar = isAdmin && (
-    <div className="flex flex-wrap gap-2 items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
-      <span className="text-white/50 text-xs font-medium">Admin · {ageGroup}</span>
-      <div className="flex gap-2 flex-wrap">
-        <button onClick={handleResetAll} disabled={resetting}
-          className="text-xs px-3 py-1.5 rounded-lg bg-orange-900/40 hover:bg-orange-800/60 border border-orange-500/30 text-orange-400 transition-colors disabled:opacity-40">
-          ↺ Reset Scores
-        </button>
-        <button onClick={handleHardReset} disabled={resetting}
-          className="text-xs px-3 py-1.5 rounded-lg bg-red-900/40 hover:bg-red-800/60 border border-red-500/30 text-red-400 transition-colors disabled:opacity-40">
-          ⚠ Hard Reset
-        </button>
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2 items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+        <span className="text-white/50 text-xs font-medium">Admin · {ageGroup}</span>
+        <div className="flex gap-2 flex-wrap">
+          <BackupRestorePanel
+            ageGroup={ageGroup}
+            scheme={scheme}
+            createBackup={createBackup}
+            fetchBackups={fetchBackups}
+            restoreFromBackup={restoreFromBackup}
+          />
+          <button onClick={handleResetAll} disabled={resetting}
+            className="text-xs px-3 py-1.5 rounded-lg bg-orange-900/40 hover:bg-orange-800/60 border border-orange-500/30 text-orange-400 transition-colors disabled:opacity-40">
+            ↺ Reset Scores
+          </button>
+          <button onClick={handleHardReset} disabled={resetting}
+            className="text-xs px-3 py-1.5 rounded-lg bg-red-900/40 hover:bg-red-800/60 border border-red-500/30 text-red-400 transition-colors disabled:opacity-40">
+            ⚠ Hard Reset
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -136,8 +151,10 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right: age group selector + auth */}
+          {/* Right: age group selector + export + auth */}
           <div className="flex items-center gap-2 shrink-0">
+            <ExportButton />
+
             {/* Age group dropdown */}
             <select
               value={ageGroup}
@@ -228,47 +245,124 @@ export default function App() {
                 </p>
               </div>
             ) : (
-              letters.map(letter => {
-                const gMatches   = groupMatches.filter(m => m.group === letter);
-                const gStandings = standings[letter] || [];
-                const maxRound   = Math.max(...gMatches.map(m => m.round), 0);
-                if (gMatches.length === 0) return null;
+              <>
+                {/* ── Sort toggle ───────────────────────────────────────── */}
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/5 border border-white/10">
+                    <button
+                      onClick={() => setGroupSort('group')}
+                      className={`text-xs px-3 py-1.5 rounded-md transition-colors font-medium ${
+                        groupSort === 'group'
+                          ? 'bg-white/15 text-white'
+                          : 'text-white/35 hover:text-white/60'
+                      }`}
+                    >
+                      By Group
+                    </button>
+                    <button
+                      onClick={() => setGroupSort('time')}
+                      className={`text-xs px-3 py-1.5 rounded-md transition-colors font-medium ${
+                        groupSort === 'time'
+                          ? 'bg-white/15 text-white'
+                          : 'text-white/35 hover:text-white/60'
+                      }`}
+                    >
+                      ⏱ By Time
+                    </button>
+                  </div>
+                  <span className="text-white/20 text-xs">
+                    {groupMatches.filter(m => m.completed).length}/{groupMatches.length} played
+                  </span>
+                </div>
 
-                return (
-                  <div key={letter} className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <h2 className="font-display text-3xl sm:text-4xl tracking-widest" style={{ color: scheme.primaryLight }}>Group {letter}</h2>
-                      <div className="flex-1 h-px" style={{ background: scheme.primaryRing }} />
-                      <span className="text-white/25 text-xs">
-                        {gMatches.filter(m => m.completed).length}/{gMatches.length} played
-                      </span>
-                    </div>
+                {/* ── By Group view (default) ───────────────────────────── */}
+                {groupSort === 'group' && letters.map(letter => {
+                  const gMatches   = groupMatches.filter(m => m.group === letter);
+                  const gStandings = standings[letter] || [];
+                  const maxRound   = Math.max(...gMatches.map(m => m.round), 0);
+                  if (gMatches.length === 0) return null;
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                      <StandingsTable standings={gStandings} group={letter} scheme={scheme} qualifyTop={ageGroup === 'Girls' ? 4 : 2} />
-                      <div className="space-y-3">
-                        {Array.from({ length: maxRound }, (_, i) => i + 1).map(round => {
-                          const roundMatches = gMatches.filter(m => m.round === round);
-                          if (!roundMatches.length) return null;
-                          return (
-                            <div key={round}>
-                              <p className="text-white/25 text-xs uppercase tracking-widest mb-1.5">Round {round}</p>
-                              <div className="space-y-2">
-                                {roundMatches.map(match => (
-                                  <MatchCard key={match.id} match={match} isAdmin={isAdmin}
-                                    onSave={updateGroupMatch} onReset={resetGroupMatch}
-                                    colorScheme="group" teams={teams}
-                                    showTime={ageGroup !== 'Girls'} />
-                                ))}
+                  return (
+                    <div key={letter} className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <h2 className="font-display text-3xl sm:text-4xl tracking-widest" style={{ color: scheme.primaryLight }}>Group {letter}</h2>
+                        <div className="flex-1 h-px" style={{ background: scheme.primaryRing }} />
+                        <span className="text-white/25 text-xs">
+                          {gMatches.filter(m => m.completed).length}/{gMatches.length} played
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                        <StandingsTable standings={gStandings} group={letter} scheme={scheme} qualifyTop={ageGroup === 'Girls' ? 4 : 2} />
+                        <div className="space-y-3">
+                          {Array.from({ length: maxRound }, (_, i) => i + 1).map(round => {
+                            const roundMatches = gMatches.filter(m => m.round === round);
+                            if (!roundMatches.length) return null;
+                            return (
+                              <div key={round}>
+                                <p className="text-white/25 text-xs uppercase tracking-widest mb-1.5">Round {round}</p>
+                                <div className="space-y-2">
+                                  {roundMatches.map(match => (
+                                    <MatchCard key={match.id} match={match} isAdmin={isAdmin}
+                                      onSave={updateGroupMatch} onReset={resetGroupMatch}
+                                      colorScheme="group" teams={teams}
+                                      showTime={ageGroup !== 'Girls'} />
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })
+                  );
+                })}
+
+                {/* ── By Time view ──────────────────────────────────────── */}
+                {groupSort === 'time' && (() => {
+                  const sorted = [...groupMatches].sort((a, b) => {
+                    const ta = a.time || ''; const tb = b.time || '';
+                    return ta < tb ? -1 : ta > tb ? 1 : 0;
+                  });
+
+                  // Group consecutive matches by the hour they fall in
+                  const blocks = [];
+                  sorted.forEach(m => {
+                    const hour = m.time ? m.time.split(':')[0] : '??';
+                    const last = blocks[blocks.length - 1];
+                    if (last && last.hour === hour) last.matches.push(m);
+                    else blocks.push({ hour, label: m.time ? `${hour}:00 – ${hour}:59` : 'Unscheduled', matches: [m] });
+                  });
+
+                  return (
+                    <div className="space-y-6">
+                      {blocks.map(block => (
+                        <div key={block.hour} className="space-y-3">
+                          {/* Hour header */}
+                          <div className="flex items-center gap-3">
+                            <span className="font-mono text-sm font-semibold" style={{ color: scheme.primary }}>
+                              {block.label}
+                            </span>
+                            <div className="flex-1 h-px" style={{ background: scheme.primaryRing }} />
+                            <span className="text-white/20 text-xs">
+                              {block.matches.filter(m => m.completed).length}/{block.matches.length} played
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {block.matches.map(match => (
+                              <MatchCard key={match.id} match={match} isAdmin={isAdmin}
+                                onSave={updateGroupMatch} onReset={resetGroupMatch}
+                                colorScheme="group" teams={teams}
+                                showTime groupLabel={`Grp ${match.group}`} />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </>
             )}
           </div>
         )}
