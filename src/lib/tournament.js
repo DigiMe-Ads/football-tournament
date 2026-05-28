@@ -117,34 +117,89 @@ function buildRRRounds(teams) {
 }
 
 // ─── STANDINGS ────────────────────────────────────────────────────────────────
+// Tiebreaker order (when points are equal):
+//   1. Goal difference  2. Goals scored  3. Goals conceded
+//   4. Head-to-head mini-league (pts → GD → GF → GA among tied teams)
+//   5. Penalties (3 kicks) — admin resolves manually; standings show teams as equal
 export function calculateStandings(groupMatches, group, teams) {
   const grpTeams = teams.filter(t => t.group === group);
+  const completedMatches = groupMatches.filter(m => m.group === group && m.completed);
+
   const table = grpTeams.map(t => ({
     teamId: t.id, teamName: t.name,
     played: 0, won: 0, drawn: 0, lost: 0,
     gf: 0, ga: 0, gd: 0, points: 0,
   }));
 
-  groupMatches
-    .filter(m => m.group === group && m.completed)
-    .forEach(m => {
-      const home = table.find(t => t.teamId === m.homeTeamId);
-      const away = table.find(t => t.teamId === m.awayTeamId);
-      if (!home || !away) return;
-      const hs = Number(m.homeScore), as_ = Number(m.awayScore);
-      home.played++; away.played++;
-      home.gf += hs; home.ga += as_;
-      away.gf += as_; away.ga += hs;
-      home.gd = home.gf - home.ga;
-      away.gd = away.gf - away.ga;
-      if (hs > as_)      { home.won++; home.points += 3; away.lost++; }
-      else if (hs < as_) { away.won++; away.points += 3; home.lost++; }
-      else               { home.drawn++; away.drawn++; home.points++; away.points++; }
-    });
+  completedMatches.forEach(m => {
+    const home = table.find(t => t.teamId === m.homeTeamId);
+    const away = table.find(t => t.teamId === m.awayTeamId);
+    if (!home || !away) return;
+    const hs = Number(m.homeScore), as_ = Number(m.awayScore);
+    home.played++; away.played++;
+    home.gf += hs; home.ga += as_;
+    away.gf += as_; away.ga += hs;
+    home.gd = home.gf - home.ga;
+    away.gd = away.gf - away.ga;
+    if (hs > as_)      { home.won++; home.points += 3; away.lost++; }
+    else if (hs < as_) { away.won++; away.points += 3; home.lost++; }
+    else               { home.drawn++; away.drawn++; home.points++; away.points++; }
+  });
 
-  return table.sort((a, b) =>
-    b.points - a.points || b.gd - a.gd || b.gf - a.gf || b.ga - a.ga
+  // Step 1: sort by overall criteria (GD, GF, GA — lower GA is better)
+  const basic = [...table].sort((a, b) =>
+    b.points - a.points || b.gd - a.gd || b.gf - a.gf || (a.ga - b.ga)
   );
+
+  // Step 2: find groups tied on all four criteria, break with H2H mini-league
+  const result = [];
+  let i = 0;
+  while (i < basic.length) {
+    let j = i + 1;
+    while (
+      j < basic.length &&
+      basic[j].points === basic[i].points &&
+      basic[j].gd     === basic[i].gd     &&
+      basic[j].gf     === basic[i].gf     &&
+      basic[j].ga     === basic[i].ga
+    ) j++;
+
+    if (j - i === 1) {
+      result.push(basic[i]);
+    } else {
+      // Compute H2H mini-league only among these tied teams
+      const tiedTeams = basic.slice(i, j);
+      const tiedIds   = new Set(tiedTeams.map(t => t.teamId));
+      const h2hMatches = completedMatches.filter(
+        m => tiedIds.has(m.homeTeamId) && tiedIds.has(m.awayTeamId)
+      );
+
+      const h2h = Object.fromEntries(tiedTeams.map(t => [t.teamId, { pts: 0, gf: 0, ga: 0 }]));
+      h2hMatches.forEach(m => {
+        const hs = Number(m.homeScore), as_ = Number(m.awayScore);
+        h2h[m.homeTeamId].gf += hs;  h2h[m.homeTeamId].ga += as_;
+        h2h[m.awayTeamId].gf += as_; h2h[m.awayTeamId].ga += hs;
+        if (hs > as_)      { h2h[m.homeTeamId].pts += 3; }
+        else if (as_ > hs) { h2h[m.awayTeamId].pts += 3; }
+        else               { h2h[m.homeTeamId].pts++; h2h[m.awayTeamId].pts++; }
+      });
+
+      result.push(
+        ...[...tiedTeams].sort((a, b) => {
+          const ah = h2h[a.teamId], bh = h2h[b.teamId];
+          if (bh.pts !== ah.pts) return bh.pts - ah.pts;
+          const agd = ah.gf - ah.ga, bgd = bh.gf - bh.ga;
+          if (bgd !== agd) return bgd - agd;
+          if (bh.gf !== ah.gf) return bh.gf - ah.gf;
+          return ah.ga - bh.ga; // lower H2H GA better; true tie → penalties (admin)
+        })
+      );
+    }
+
+    i = j;
+  }
+
+  return result;
 }
 
 // ─── KNOCKOUT TEMPLATE BUILDER ────────────────────────────────────────────────

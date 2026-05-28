@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { exportTournamentToExcel } from '../lib/exportExcel';
 
+// ExportButton is admin-only — always renders on the white admin background
 export default function ExportButton() {
-  const [state, setState] = useState('idle'); // idle | loading | done | error
+  const [state, setState] = useState('idle');
 
   async function handleExport() {
     setState('loading');
@@ -25,10 +26,10 @@ export default function ExportButton() {
   };
 
   const colors = {
-    idle:    'border-white/15 text-white/50 hover:border-emerald-500/50 hover:text-emerald-300',
-    loading: 'border-white/10 text-white/30 cursor-not-allowed',
-    done:    'border-emerald-500/50 text-emerald-400',
-    error:   'border-red-500/50 text-red-400',
+    idle:    'border-gray-300 text-gray-500 hover:border-emerald-500 hover:text-emerald-700',
+    loading: 'border-gray-200 text-gray-300 cursor-not-allowed',
+    done:    'border-emerald-500 text-emerald-600',
+    error:   'border-red-500 text-red-600',
   };
 
   const { icon, text } = labels[state];

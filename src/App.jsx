@@ -8,6 +8,7 @@ import KnockoutBracket from './components/KnockoutBracket';
 import LoginPage from './components/LoginPage';
 import TeamManager from './components/TeamManager';
 import ExportButton from './components/ExportButton';
+import BackupRestorePanel from './components/BackupRestorePanel';
 
 const KO_SEGMENTS = ['cup', 'plate', 'shield', 'bowl'];
 const KO_ICONS    = { cup: '🏆', plate: '🥈', shield: '🛡️', bowl: '🏅' };
@@ -42,14 +43,40 @@ export default function App() {
     letters, activeLetters,
     saveTeam, deleteTeam, resetGroup, resetAllTeams,
     initializeTournament,
-    updateGroupMatch, resetGroupMatch,
-    updateKnockoutMatch, resetKnockoutMatch,
+    updateGroupMatch, updateGroupMatchTime, resetGroupMatch,
+    updateKnockoutMatch, updateKnockoutMatchTime, resetKnockoutMatch,
     resetAll, hardReset,
+    createBackup, fetchBackups, restoreFromBackup,
   } = useTournament(ageGroup);
 
   useEffect(() => { setGroupSort('group'); }, [ageGroup]);
 
   const scheme = AGE_SCHEME[ageGroup] || AGE_SCHEME.U10;
+
+  // White background for admin, dark for public
+  const isLight = isAdmin;
+  const pageBg    = isLight ? '#ffffff' : '#0a0f1e';
+  const headerBg  = isLight ? 'rgba(255,255,255,0.96)' : 'rgba(10,15,30,0.96)';
+  const selectBg  = isLight ? '#f8fafc' : '#0d1530';
+  const gridLine  = isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.015)';
+
+  // Text helpers
+  const tPrimary   = isLight ? '#111827' : '#ffffff';
+  const tSecondary = isLight ? '#6b7280' : 'rgba(255,255,255,0.50)';
+  const tMuted     = isLight ? '#9ca3af' : 'rgba(255,255,255,0.30)';
+  const tDim       = isLight ? '#b0b7c3' : 'rgba(255,255,255,0.25)';
+  const tFaint     = isLight ? '#c4cad4' : 'rgba(255,255,255,0.20)';
+  const tFainter   = isLight ? '#d1d5db' : 'rgba(255,255,255,0.15)';
+
+  // Surface / border helpers
+  const bgSubtle   = isLight ? 'rgba(0,0,0,0.04)'  : 'rgba(255,255,255,0.05)';
+  const bgActive   = isLight ? 'rgba(0,0,0,0.12)'  : 'rgba(255,255,255,0.15)';
+  const bdSubtle   = isLight ? 'rgba(0,0,0,0.08)'  : 'rgba(255,255,255,0.10)';
+  const bdFaint    = isLight ? 'rgba(0,0,0,0.05)'  : 'rgba(255,255,255,0.05)';
+  const bdMedium   = isLight ? 'rgba(0,0,0,0.12)'  : 'rgba(255,255,255,0.15)';
+
+  // On white, use scheme.primary for headings (primaryLight is too pale on white)
+  const headingColor = isLight ? scheme.primary : scheme.primaryLight;
 
   const cupChamp    = getChampion('CF1',   knockoutMatches, teams);
   const plateChamp  = getChampion('PF1',   knockoutMatches, teams);
@@ -87,15 +114,33 @@ export default function App() {
   }
 
   const adminBar = isAdmin && (
-    <div className="flex flex-wrap gap-2 items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
-      <span className="text-white/50 text-xs font-medium">Admin · {ageGroup}</span>
+    <div
+      className="flex flex-wrap gap-2 items-center justify-between p-3 rounded-xl border"
+      style={{ backgroundColor: bgSubtle, borderColor: bdSubtle }}
+    >
+      <span className="text-xs font-medium" style={{ color: tSecondary }}>Admin · {ageGroup}</span>
       <div className="flex gap-2 flex-wrap">
+        <BackupRestorePanel
+          ageGroup={ageGroup}
+          scheme={scheme}
+          createBackup={createBackup}
+          fetchBackups={fetchBackups}
+          restoreFromBackup={restoreFromBackup}
+        />
         <button onClick={handleResetAll} disabled={resetting}
-          className="text-xs px-3 py-1.5 rounded-lg bg-orange-900/40 hover:bg-orange-800/60 border border-orange-500/30 text-orange-400 transition-colors disabled:opacity-40">
+          className={`text-xs px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-40 ${
+            isLight
+              ? 'bg-orange-100 hover:bg-orange-200 border-orange-300 text-orange-700'
+              : 'bg-orange-900/40 hover:bg-orange-800/60 border-orange-500/30 text-orange-400'
+          }`}>
           ↺ Reset Scores
         </button>
         <button onClick={handleHardReset} disabled={resetting}
-          className="text-xs px-3 py-1.5 rounded-lg bg-red-900/40 hover:bg-red-800/60 border border-red-500/30 text-red-400 transition-colors disabled:opacity-40">
+          className={`text-xs px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-40 ${
+            isLight
+              ? 'bg-red-100 hover:bg-red-200 border-red-300 text-red-700'
+              : 'bg-red-900/40 hover:bg-red-800/60 border-red-500/30 text-red-400'
+          }`}>
           ⚠ Hard Reset
         </button>
       </div>
@@ -106,11 +151,11 @@ export default function App() {
     <div
       className="min-h-screen"
       style={{
-        backgroundColor: '#0a0f1e',
+        backgroundColor: pageBg,
         backgroundImage: `
           radial-gradient(ellipse at 50% 0%, ${scheme.bgGlow} 0%, transparent 55%),
           radial-gradient(ellipse at 80% 80%, ${scheme.primaryDim} 0%, transparent 50%),
-          repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 80px)
+          repeating-linear-gradient(90deg, ${gridLine} 0px, ${gridLine} 1px, transparent 1px, transparent 80px)
         `,
         transition: 'background-image 0.5s ease',
       }}
@@ -119,7 +164,7 @@ export default function App() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header
         className="sticky top-0 z-40 backdrop-blur-md"
-        style={{ backgroundColor: 'rgba(10,15,30,0.96)', borderBottom: `1px solid ${scheme.primaryRing}` }}
+        style={{ backgroundColor: headerBg, borderBottom: `1px solid ${scheme.primaryRing}` }}
       >
         {/* Colored top accent line */}
         <div
@@ -133,10 +178,10 @@ export default function App() {
             <img src="/logo.png" alt="Kickerz Logo" className="w-[90px] h-[90px] sm:w-[120px] sm:h-[120px]" />
             <div className="min-w-0">
               <h1 className="font-display text-lg sm:text-xl leading-none tracking-widest">
-                <span className="text-white">KICKERZ </span>
+                <span style={{ color: tPrimary }}>KICKERZ </span>
                 <span className="gold-shimmer">CUP 2026</span>
               </h1>
-              <p className="text-white/30 text-xs mt-0.5 hidden sm:block">June 6th &amp; 7th</p>
+              <p className="text-xs mt-0.5 hidden sm:block" style={{ color: tMuted }}>June 6th &amp; 7th</p>
             </div>
           </div>
 
@@ -147,11 +192,11 @@ export default function App() {
             <select
               value={ageGroup}
               onChange={e => { setAgeGroup(e.target.value); setTab('groups'); }}
-              className="bg-kz-900 border text-sm rounded-lg px-2 py-1.5 sm:px-3 focus:outline-none cursor-pointer appearance-none"
-              style={{ backgroundColor: '#0d1530', colorScheme: 'dark', borderColor: scheme.primaryRing, color: scheme.primary }}
+              className="border text-sm rounded-lg px-2 py-1.5 sm:px-3 focus:outline-none cursor-pointer appearance-none"
+              style={{ backgroundColor: selectBg, colorScheme: isLight ? 'light' : 'dark', borderColor: scheme.primaryRing, color: scheme.primary }}
             >
               {AGE_GROUPS.map(ag => (
-                <option key={ag} value={ag} style={{ backgroundColor: '#0d1530', color: '#F5A623' }}>
+                <option key={ag} value={ag} style={{ backgroundColor: selectBg, color: isLight ? '#374151' : '#F5A623' }}>
                   {ag}
                 </option>
               ))}
@@ -159,8 +204,16 @@ export default function App() {
 
             {isAdmin ? (
               <div className="flex items-center gap-1.5">
-                <span className="hidden sm:block text-white/30 text-xs border border-white/10 rounded-full px-2 py-0.5">Admin</span>
-                <button onClick={logout} className="text-xs text-white/35 hover:text-white/70 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors">
+                <span
+                  className="hidden sm:block text-xs rounded-full px-2 py-0.5 border"
+                  style={{ color: tMuted, borderColor: bdSubtle }}
+                >Admin</span>
+                <button onClick={logout}
+                  className={`text-xs px-2 py-1.5 rounded-lg transition-colors ${
+                    isLight
+                      ? 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+                      : 'text-white/35 hover:text-white/70 hover:bg-white/5'
+                  }`}>
                   Logout
                 </button>
               </div>
@@ -175,11 +228,11 @@ export default function App() {
 
         {/* Age group indicator strip */}
         <div className="max-w-7xl mx-auto px-3 sm:px-6 pb-0">
-          <div className="flex items-center gap-2 py-1 border-b border-white/5">
+          <div className="flex items-center gap-2 py-1" style={{ borderBottom: `1px solid ${bdFaint}` }}>
             <span className="font-display tracking-wider text-sm" style={{ color: scheme.primary }}>{ageGroup}</span>
-            <span className="text-white/20 text-xs">·</span>
-            <span className="text-white/30 text-xs">Groups: {letters.join(', ')}</span>
-            {initialized && <span className="text-white/20 text-xs">· {groupMatches.length} group matches</span>}
+            <span className="text-xs" style={{ color: tFaint }}>·</span>
+            <span className="text-xs" style={{ color: tMuted }}>Groups: {letters.join(', ')}</span>
+            {initialized && <span className="text-xs" style={{ color: tFaint }}>· {groupMatches.length} group matches</span>}
           </div>
         </div>
 
@@ -188,7 +241,9 @@ export default function App() {
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                tab === t.id ? '' : 'border-transparent text-white/40 hover:text-white/70'
+                tab !== t.id
+                  ? (isLight ? 'border-transparent text-gray-400 hover:text-gray-700' : 'border-transparent text-white/40 hover:text-white/70')
+                  : ''
               }`}
               style={tab === t.id ? { borderColor: scheme.primary, color: scheme.primary } : {}}>
               <span className="text-sm">{t.icon}</span>
@@ -223,7 +278,7 @@ export default function App() {
             {adminBar}
 
             {!initialized ? (
-              <div className="text-center py-16 text-white/30">
+              <div className="text-center py-16" style={{ color: tMuted }}>
                 <p className="text-5xl mb-4">📋</p>
                 <p className="font-display text-2xl tracking-wider mb-2">No Fixtures</p>
                 <p className="text-sm">
@@ -236,25 +291,32 @@ export default function App() {
               <>
                 {/* ── Sort toggle ─────────────────────────────────────── */}
                 <div className="flex items-center gap-3">
-                  <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/5 border border-white/10">
+                  <div
+                    className="flex gap-0.5 p-0.5 rounded-lg border"
+                    style={{ backgroundColor: bgSubtle, borderColor: bdSubtle }}
+                  >
                     <button
                       onClick={() => setGroupSort('group')}
-                      className={`text-xs px-3 py-1.5 rounded-md transition-colors font-medium ${
-                        groupSort === 'group' ? 'bg-white/15 text-white' : 'text-white/35 hover:text-white/60'
-                      }`}
+                      className="text-xs px-3 py-1.5 rounded-md transition-colors font-medium"
+                      style={{
+                        backgroundColor: groupSort === 'group' ? bgActive : 'transparent',
+                        color: groupSort === 'group' ? tPrimary : tMuted,
+                      }}
                     >
                       By Group
                     </button>
                     <button
                       onClick={() => setGroupSort('time')}
-                      className={`text-xs px-3 py-1.5 rounded-md transition-colors font-medium ${
-                        groupSort === 'time' ? 'bg-white/15 text-white' : 'text-white/35 hover:text-white/60'
-                      }`}
+                      className="text-xs px-3 py-1.5 rounded-md transition-colors font-medium"
+                      style={{
+                        backgroundColor: groupSort === 'time' ? bgActive : 'transparent',
+                        color: groupSort === 'time' ? tPrimary : tMuted,
+                      }}
                     >
                       ⏱ By Time
                     </button>
                   </div>
-                  <span className="text-white/20 text-xs">
+                  <span className="text-xs" style={{ color: tFaint }}>
                     {groupMatches.filter(m => m.completed).length}/{groupMatches.length} played
                   </span>
                 </div>
@@ -269,28 +331,29 @@ export default function App() {
                   return (
                     <div key={letter} className="space-y-4">
                       <div className="flex items-center gap-3">
-                        <h2 className="font-display text-3xl sm:text-4xl tracking-widest" style={{ color: scheme.primaryLight }}>Group {letter}</h2>
+                        <h2 className="font-display text-3xl sm:text-4xl tracking-widest" style={{ color: headingColor }}>Group {letter}</h2>
                         <div className="flex-1 h-px" style={{ background: scheme.primaryRing }} />
-                        <span className="text-white/25 text-xs">
+                        <span className="text-xs" style={{ color: tDim }}>
                           {gMatches.filter(m => m.completed).length}/{gMatches.length} played
                         </span>
                       </div>
 
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                        <StandingsTable standings={gStandings} group={letter} scheme={scheme} qualifyTop={ageGroup === 'Girls' ? 4 : 2} />
+                        <StandingsTable standings={gStandings} group={letter} scheme={scheme} qualifyTop={ageGroup === 'Girls' ? 4 : 2} isLight={isLight} />
                         <div className="space-y-3">
                           {Array.from({ length: maxRound }, (_, i) => i + 1).map(round => {
                             const roundMatches = gMatches.filter(m => m.round === round);
                             if (!roundMatches.length) return null;
                             return (
                               <div key={round}>
-                                <p className="text-white/25 text-xs uppercase tracking-widest mb-1.5">Round {round}</p>
+                                <p className="text-xs uppercase tracking-widest mb-1.5" style={{ color: tDim }}>Round {round}</p>
                                 <div className="space-y-2">
                                   {roundMatches.map(match => (
                                     <MatchCard key={match.id} match={match} isAdmin={isAdmin}
                                       onSave={updateGroupMatch} onReset={resetGroupMatch}
+                                      onSaveTime={updateGroupMatchTime}
                                       colorScheme="group" teams={teams}
-                                      showTime={ageGroup !== 'Girls'} />
+                                      showTime showFieldNo={ageGroup === 'Girls'} />
                                   ))}
                                 </div>
                               </div>
@@ -327,7 +390,7 @@ export default function App() {
                               {block.label}
                             </span>
                             <div className="flex-1 h-px" style={{ background: scheme.primaryRing }} />
-                            <span className="text-white/20 text-xs">
+                            <span className="text-xs" style={{ color: tFaint }}>
                               {block.matches.filter(m => m.completed).length}/{block.matches.length} played
                             </span>
                           </div>
@@ -335,8 +398,10 @@ export default function App() {
                             {block.matches.map(match => (
                               <MatchCard key={match.id} match={match} isAdmin={isAdmin}
                                 onSave={updateGroupMatch} onReset={resetGroupMatch}
+                                onSaveTime={updateGroupMatchTime}
                                 colorScheme="group" teams={teams}
-                                showTime groupLabel={`Grp ${match.group}`} />
+                                showTime groupLabel={`Grp ${match.group}`}
+                                showFieldNo={ageGroup === 'Girls'} />
                             ))}
                           </div>
                         </div>
@@ -354,7 +419,7 @@ export default function App() {
           <div className="space-y-5 fade-up">
             {adminBar}
             {!initialized || !knockoutTemplate ? (
-              <div className="text-center py-16 text-white/30">
+              <div className="text-center py-16" style={{ color: tMuted }}>
                 <p className="text-5xl mb-4">🔒</p>
                 <p className="font-display text-2xl tracking-wider">Knockouts Locked</p>
                 <p className="text-sm mt-2">
@@ -372,10 +437,16 @@ export default function App() {
                   isAdmin={isAdmin}
                   onSave={updateKnockoutMatch}
                   onReset={resetKnockoutMatch}
+                  onSaveTime={updateKnockoutMatchTime}
                   teams={teams}
                   scheme={scheme}
+                  isLight={isLight}
+                  showFieldNo={ageGroup === 'Girls'}
                 />
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-white/35 text-xs leading-relaxed">
+                <div
+                  className="p-4 rounded-xl border text-xs leading-relaxed"
+                  style={{ backgroundColor: bgSubtle, borderColor: bdSubtle, color: tSecondary }}
+                >
                   {tab === 'cup'    && `🏆 Cup: Top 2 from each group. Winners advance; losers drop to Plate.`}
                   {tab === 'plate'  && `🥈 Plate: Cup Quarter Final losers compete for the Plate.`}
                   {tab === 'shield' && `🛡️ Shield: 3rd & 4th from all groups enter Shield Quarter Finals. Losers drop to Bowl.`}
@@ -405,13 +476,18 @@ export default function App() {
             ].map(({ label, icon, champ }) => (
               <div
                 key={label}
-                className={`rounded-xl border p-4 text-center transition-all ${champ ? 'bg-white/5 border-white/15' : 'bg-black/10 border-white/5 opacity-40'}`}
+                className="rounded-xl border p-4 text-center transition-all"
+                style={{
+                  backgroundColor: champ ? bgSubtle : (isLight ? 'rgba(0,0,0,0.02)' : 'rgba(0,0,0,0.10)'),
+                  borderColor: champ ? bdMedium : bdFaint,
+                  opacity: champ ? 1 : 0.4,
+                }}
               >
                 <div className="text-3xl mb-2">{icon}</div>
-                <div className="font-display text-xs tracking-widest text-white/40 mb-1.5">{label}</div>
+                <div className="font-display text-xs tracking-widest mb-1.5" style={{ color: tMuted }}>{label}</div>
                 <div
                   className="font-display text-sm sm:text-base tracking-wider truncate"
-                  style={{ color: champ ? scheme.primaryLight : 'rgba(255,255,255,0.25)' }}
+                  style={{ color: champ ? headingColor : tFainter }}
                 >
                   {champ || '—'}
                 </div>
@@ -421,9 +497,12 @@ export default function App() {
         </div>
       )}
 
-      <footer className="mt-12 py-6 border-t border-white/5 text-center text-white/15 text-xs">
-        <p className="font-display tracking-widest text-sm text-white/20">KICKERZ CUP 2026</p>
-        <p className="mt-1">June 6th &amp; 7th · 8:00 AM onwards · 16-minute matches</p>
+      <footer
+        className="mt-12 py-6 text-center text-xs"
+        style={{ borderTop: `1px solid ${bdFaint}` }}
+      >
+        <p className="font-display tracking-widest text-sm" style={{ color: tFaint }}>KICKERZ CUP 2026</p>
+        <p className="mt-1" style={{ color: tFainter }}>June 6th &amp; 7th · 8:00 AM onwards · 16-minute matches</p>
       </footer>
 
       {showLogin && <LoginPage onClose={() => setShowLogin(false)} />}

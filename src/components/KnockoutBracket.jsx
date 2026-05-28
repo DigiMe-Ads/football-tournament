@@ -3,23 +3,31 @@ import MatchCard from './MatchCard';
 const segStyles = {
   cup: {
     icon: '🏆', title: 'text-kz-gold', badge: 'bg-kz-gold/20 text-kz-gold border-kz-gold/30',
+    lightBadge: 'bg-amber-100 text-amber-700 border-amber-300',
     border: 'rgba(245,166,35,0.45)', titleHex: '#F5A623', glowColor: 'rgba(245,166,35,0.35)',
     bg1: 'rgba(245,166,35,0.22)', bg2: 'rgba(245,130,10,0.10)',
+    lightBg1: 'rgba(245,166,35,0.10)', lightBg2: 'rgba(245,166,35,0.05)',
   },
   plate: {
     icon: '🥈', title: 'text-sky-400', badge: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
+    lightBadge: 'bg-sky-100 text-sky-700 border-sky-400',
     border: 'rgba(14,165,233,0.45)', titleHex: '#38bdf8', glowColor: 'rgba(14,165,233,0.35)',
     bg1: 'rgba(14,165,233,0.20)', bg2: 'rgba(2,132,199,0.10)',
+    lightBg1: 'rgba(14,165,233,0.08)', lightBg2: 'rgba(2,132,199,0.04)',
   },
   shield: {
     icon: '🛡️', title: 'text-violet-400', badge: 'bg-violet-500/20 text-violet-300 border-violet-500/30',
+    lightBadge: 'bg-violet-100 text-violet-700 border-violet-400',
     border: 'rgba(139,92,246,0.45)', titleHex: '#a78bfa', glowColor: 'rgba(139,92,246,0.35)',
     bg1: 'rgba(139,92,246,0.20)', bg2: 'rgba(109,40,217,0.10)',
+    lightBg1: 'rgba(139,92,246,0.08)', lightBg2: 'rgba(109,40,217,0.04)',
   },
   bowl: {
     icon: '🏅', title: 'text-rose-400', badge: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+    lightBadge: 'bg-rose-100 text-rose-700 border-rose-400',
     border: 'rgba(244,63,94,0.45)', titleHex: '#fb7185', glowColor: 'rgba(244,63,94,0.35)',
     bg1: 'rgba(244,63,94,0.20)', bg2: 'rgba(190,18,60,0.10)',
+    lightBg1: 'rgba(244,63,94,0.08)', lightBg2: 'rgba(190,18,60,0.04)',
   },
 };
 
@@ -62,7 +70,7 @@ function FireworkBurst() {
   );
 }
 
-export default function KnockoutBracket({ segment, segmentData, knockoutMatches, isAdmin, onSave, onReset, teams, scheme }) {
+export default function KnockoutBracket({ segment, segmentData, knockoutMatches, isAdmin, onSave, onReset, onSaveTime, teams, scheme, isLight = false, showFieldNo = false }) {
   const style = segStyles[segment];
   if (!segmentData || !style) return null;
 
@@ -73,7 +81,6 @@ export default function KnockoutBracket({ segment, segmentData, knockoutMatches,
     return knockoutMatches.find(m => m.id === templateId || m.id?.endsWith(`_${templateId}`));
   }
 
-  // Detect winner from the final round
   const lastRound  = segmentData.rounds[segmentData.rounds.length - 1];
   const finalTmpl  = lastRound?.matches[0];
   const finalMatch = finalTmpl ? findMatch(finalTmpl.id) : null;
@@ -87,12 +94,12 @@ export default function KnockoutBracket({ segment, segmentData, knockoutMatches,
       className="rounded-2xl border p-4 sm:p-6"
       style={{
         borderColor: outerBorder,
-        background: `
-          radial-gradient(ellipse at 0% 0%, ${style.bg1} 0%, transparent 55%),
-          radial-gradient(ellipse at 100% 100%, ${style.bg2} 0%, transparent 55%),
-          linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.30) 100%)
-        `,
-        boxShadow: `inset 0 0 60px ${style.glowColor.replace('0.35', '0.08')}`,
+        background: isLight
+          ? `radial-gradient(ellipse at 0% 0%, ${style.lightBg1} 0%, transparent 55%), radial-gradient(ellipse at 100% 100%, ${style.lightBg2} 0%, transparent 55%), #ffffff`
+          : `radial-gradient(ellipse at 0% 0%, ${style.bg1} 0%, transparent 55%), radial-gradient(ellipse at 100% 100%, ${style.bg2} 0%, transparent 55%), linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.30) 100%)`,
+        boxShadow: isLight
+          ? `0 1px 3px rgba(0,0,0,0.08), inset 0 0 40px ${style.glowColor.replace('0.35', '0.04')}`
+          : `inset 0 0 60px ${style.glowColor.replace('0.35', '0.08')}`,
       }}
     >
       {/* Header */}
@@ -100,7 +107,9 @@ export default function KnockoutBracket({ segment, segmentData, knockoutMatches,
         <span className="text-2xl sm:text-3xl">{style.icon}</span>
         <div>
           <h2 className={`font-display text-2xl sm:text-3xl tracking-wider ${style.title}`}>{segmentData.label}</h2>
-          <p className="text-white/30 text-xs">{segmentData.rounds.length} round{segmentData.rounds.length !== 1 ? 's' : ''}</p>
+          <p className={`text-xs ${isLight ? 'text-gray-400' : 'text-white/30'}`}>
+            {segmentData.rounds.length} round{segmentData.rounds.length !== 1 ? 's' : ''}
+          </p>
         </div>
       </div>
 
@@ -113,7 +122,9 @@ export default function KnockoutBracket({ segment, segmentData, knockoutMatches,
           return (
             <div key={round.id} className="flex-shrink-0 w-[220px] sm:w-[260px]">
               <div className="mb-3">
-                <span className={`text-xs uppercase tracking-widest font-semibold border rounded-full px-3 py-1 ${style.badge}`}>
+                <span className={`text-xs uppercase tracking-widest font-semibold border rounded-full px-3 py-1 ${
+                  isLight ? style.lightBadge : style.badge
+                }`}>
                   {round.label}
                 </span>
               </div>
@@ -128,10 +139,12 @@ export default function KnockoutBracket({ segment, segmentData, knockoutMatches,
                       isAdmin={isAdmin}
                       onSave={onSave}
                       onReset={onReset}
+                      onSaveTime={onSaveTime}
                       colorScheme={segment}
-                      showTime={false}
+                      showTime
                       teams={teams}
                       isKnockout={true}
+                      showFieldNo={showFieldNo}
                     />
                   );
                 })}
@@ -143,14 +156,15 @@ export default function KnockoutBracket({ segment, segmentData, knockoutMatches,
         {/* ── Winner column (inline with bracket) ─────────────────────── */}
         {winnerName && (
           <div className="flex-shrink-0 w-[200px] sm:w-[240px] flex flex-col">
-            {/* Round-label placeholder to keep vertical rhythm */}
             <div className="mb-3">
-              <span className={`text-xs uppercase tracking-widest font-semibold border rounded-full px-3 py-1 ${style.badge}`}>
+              <span className={`text-xs uppercase tracking-widest font-semibold border rounded-full px-3 py-1 ${
+                isLight ? style.lightBadge : style.badge
+              }`}>
                 Champion
               </span>
             </div>
 
-            {/* Card */}
+            {/* Winner card — always dark for dramatic effect */}
             <div
               className="winner-glow rounded-2xl border p-6 text-center relative overflow-hidden"
               style={{
@@ -162,10 +176,7 @@ export default function KnockoutBracket({ segment, segmentData, knockoutMatches,
                 `,
               }}
             >
-              {/* Firework particles */}
               <FireworkBurst />
-
-              {/* Content */}
               <div className="relative z-10">
                 <span className="crown-float text-5xl sm:text-6xl block mb-3">👑</span>
                 <p className="text-white/50 text-[11px] uppercase tracking-[0.2em] font-semibold mb-2">

@@ -246,6 +246,12 @@ export function useTournament(ageGroup) {
     });
   }, []);
 
+  const updateGroupMatchTime = useCallback(async (matchId, time, fieldNo) => {
+    const update = { time: time ?? null };
+    if (fieldNo !== undefined) update.fieldNumber = fieldNo;
+    await updateDoc(doc(db, MATCHES_COL, matchId), update);
+  }, []);
+
   const resetGroupMatch = useCallback(async (matchId) => {
     await updateDoc(doc(db, MATCHES_COL, matchId), {
       homeScore: null, awayScore: null, completed: false,
@@ -254,7 +260,6 @@ export function useTournament(ageGroup) {
 
   const updateKnockoutMatch = useCallback(async (matchId, hs, as_, penData) => {
   const completed = hs !== '' && as_ !== '' && hs != null && as_ != null;
-  // matchId may be bare "CQF1" or full "U10_CQF1" — normalise to full doc id
   const docId = matchId.includes('_') ? matchId : `${ageGroup}_${matchId}`;
   await updateDoc(doc(db, KNOCKOUT_COL, docId), {
     homeScore:    completed ? Number(hs) : null,
@@ -264,6 +269,13 @@ export function useTournament(ageGroup) {
     penWinner:    penData?.penWinner    ?? null,
     completed,
   });
+}, [ageGroup]);
+
+const updateKnockoutMatchTime = useCallback(async (matchId, time, fieldNo) => {
+  const docId = matchId.includes('_') ? matchId : `${ageGroup}_${matchId}`;
+  const update = { time: time ?? null };
+  if (fieldNo !== undefined) update.fieldNumber = fieldNo;
+  await updateDoc(doc(db, KNOCKOUT_COL, docId), update);
 }, [ageGroup]);
 
 const resetKnockoutMatch = useCallback(async (matchId) => {
@@ -373,8 +385,8 @@ const resetKnockoutMatch = useCallback(async (matchId) => {
     letters, activeLetters,
     saveTeam, deleteTeam, resetGroup, resetAllTeams,
     initializeTournament,
-    updateGroupMatch,    resetGroupMatch,
-    updateKnockoutMatch, resetKnockoutMatch,
+    updateGroupMatch, updateGroupMatchTime, resetGroupMatch,
+    updateKnockoutMatch, updateKnockoutMatchTime, resetKnockoutMatch,
     resetAll,            hardReset,
     createBackup, fetchBackups, restoreFromBackup,
   };
