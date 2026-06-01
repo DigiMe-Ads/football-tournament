@@ -5,7 +5,7 @@ export const MATCH_DURATION     = 16;
 export const BREAK_BETWEEN      = 4;
 
 // ─── AGE GROUPS ───────────────────────────────────────────────────────────────
-export const AGE_GROUPS = ['U10', 'U12', 'U14', 'U16', 'Girls', 'Testing']; // TESTING_MODE: remove 'Testing'
+export const AGE_GROUPS = ['U10', 'U12', 'U14', 'U16', 'Girls'];
 
 // Each age group gets its own set of group letters
 export const AGE_GROUP_LETTERS = {
@@ -14,7 +14,6 @@ export const AGE_GROUP_LETTERS = {
   U14:   ['I', 'J', 'K', 'L'],
   U16:   ['M', 'N', 'O', 'P'],
   Girls: ['Q', 'R'],
-  Testing: ['S', 'T'], // TESTING_MODE: remove this line
 };
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -210,26 +209,6 @@ export function calculateStandings(groupMatches, group, teams) {
 // Shield: 3rd & 4th per group → QFs → SFs → Final
 // Bowl:   Shield QF losers → SFs → Final
 
-// ── TESTING_MODE: remove this entire function block to disable Testing mode ───
-// Testing: 2 groups of 4, Cup only — top 2 from each group → SFs → Final
-function buildTestingKnockoutTemplate(letters) {
-  const [g1, g2] = letters;
-  return {
-    cup: {
-      label: 'Cup', icon: '🏆',
-      rounds: [
-        { id: 'cup-sf', label: 'Semi Finals', matches: [
-          { id: 'CSF1', homeSlot: `${g1}1`, awaySlot: `${g2}2` },
-          { id: 'CSF2', homeSlot: `${g2}1`, awaySlot: `${g1}2` },
-        ]},
-        { id: 'cup-f', label: 'Final', matches: [
-          { id: 'CF1', homeSlot: 'W:CSF1', awaySlot: 'W:CSF2' },
-        ]},
-      ],
-    },
-  };
-}
-// ── end TESTING_MODE ──────────────────────────────────────────────────────────
 
 // ─── GIRLS KNOCKOUT (Cup only, top 4 from 2 groups → QF → SF → Final) ────────
 function buildGirlsKnockoutTemplate(letters) {
@@ -260,7 +239,6 @@ function buildGirlsKnockoutTemplate(letters) {
 
 export function buildKnockoutTemplate(letters, ageGroup = null) {
   if (ageGroup === 'Girls') return buildGirlsKnockoutTemplate(letters);
-  if (ageGroup === 'Testing') return buildTestingKnockoutTemplate(letters); // TESTING_MODE: remove this line
   const n = letters.length; // number of groups (2 or 4 typical)
 
   // ── CUP ──────────────────────────────────────────────────────────────────

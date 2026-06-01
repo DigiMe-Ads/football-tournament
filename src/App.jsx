@@ -19,7 +19,7 @@ const AGE_GROUP_TITLE = {
   U14:   'U14 (2012 - 2013)',
   U16:   'U16 (2010 - 2011)',
   Girls: 'Girls U14 (2012, 13 & 14 (+3 - 2011, +1 - 2010))',
-  Testing: 'Testing Mode', // TESTING_MODE: remove this line
+  // Testing: 'Testing Mode', // TESTING_MODE: remove this line
 };
 
 const AGE_SCHEME = {
@@ -28,7 +28,7 @@ const AGE_SCHEME = {
   U14:     { primary: '#4ade80', primaryLight: '#bbf7d0', primaryDim: 'rgba(74,222,128,0.10)',  primaryRing: 'rgba(74,222,128,0.35)',  bgGlow: 'rgba(74,222,128,0.18)'  },
   U16:     { primary: '#facc15', primaryLight: '#fef08a', primaryDim: 'rgba(250,204,21,0.10)',  primaryRing: 'rgba(250,204,21,0.35)',  bgGlow: 'rgba(250,204,21,0.18)'  },
   Girls:   { primary: '#f472b6', primaryLight: '#fbcfe8', primaryDim: 'rgba(244,114,182,0.10)', primaryRing: 'rgba(244,114,182,0.35)', bgGlow: 'rgba(244,114,182,0.18)' },
-  Testing: { primary: '#a78bfa', primaryLight: '#ddd6fe', primaryDim: 'rgba(167,139,250,0.10)', primaryRing: 'rgba(167,139,250,0.35)', bgGlow: 'rgba(167,139,250,0.18)' }, // TESTING_MODE: remove this line
+  // Testing: { primary: '#a78bfa', primaryLight: '#ddd6fe', primaryDim: 'rgba(167,139,250,0.10)', primaryRing: 'rgba(167,139,250,0.35)', bgGlow: 'rgba(167,139,250,0.18)' }, // TESTING_MODE: remove this line
 };
 
 function getChampion(finalId, knockoutMatches, teams) {
@@ -94,7 +94,7 @@ export default function App() {
   const bowlChamp   = getChampion('BF1',   knockoutMatches, teams);
   const hasChamps   = !!(cupChamp || plateChamp || shieldChamp || bowlChamp);
 
-  const koSegments = (ageGroup === 'Girls' || ageGroup === 'Testing') ? ['cup'] : KO_SEGMENTS; // TESTING_MODE: change back to: ageGroup === 'Girls' ? ['cup'] : KO_SEGMENTS
+  const koSegments = ageGroup === 'Girls' ? ['cup'] : KO_SEGMENTS;
 
   const TABS = [
     ...(isAdmin ? [{ id: 'setup', label: 'Setup', icon: '⚙️' }] : []),
