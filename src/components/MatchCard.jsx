@@ -59,6 +59,7 @@ export default function MatchCard({
   const [saving, setSaving] = useState(false);
   const [editingTime, setEditingTime] = useState(false);
   const [timeVal, setTimeVal] = useState('');
+  const [dateVal, setDateVal] = useState('');
   const [fieldNoVal, setFieldNoVal] = useState('');
 
   const style    = segColors[colorScheme] || segColors.group;
@@ -81,6 +82,7 @@ export default function MatchCard({
 
   function startEditTime() {
     setTimeVal(match.time ?? '');
+    setDateVal(match.date ?? '');
     setFieldNoVal(match.fieldNumber != null ? String(match.fieldNumber) : '');
     setEditingTime(true);
   }
@@ -88,8 +90,15 @@ export default function MatchCard({
   async function handleTimeSave() {
     if (!onSaveTime) return;
     const fieldNo = showFieldNo ? (fieldNoVal !== '' ? Number(fieldNoVal) : null) : undefined;
-    await onSaveTime(match.id, timeVal || null, fieldNo);
+    await onSaveTime(match.id, timeVal || null, fieldNo, dateVal || null);
     setEditingTime(false);
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const [, month, day] = dateStr.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${months[parseInt(month, 10) - 1]} ${parseInt(day, 10)}`;
   }
 
   async function handleSave() {
@@ -122,11 +131,11 @@ export default function MatchCard({
     } ${match.completed ? '' : tbd ? 'opacity-50' : 'opacity-80 hover:opacity-100'}`}>
 
       {/* Time + optional group label */}
-      {showTime && (match.time || groupLabel || (showFieldNo && match.fieldNumber != null)) && (
+      {showTime && (match.time || match.date || groupLabel || (showFieldNo && match.fieldNumber != null)) && (
         <span className={`absolute -top-2.5 left-3 text-xs font-mono px-2 py-0.5 rounded-full border ${
           L ? 'bg-white border-gray-200 text-gray-500 shadow-sm' : 'bg-kz-950 border-white/10 text-white/50'
         }`}>
-          {match.time}
+          {match.date ? `${formatDate(match.date)} · ` : ''}{match.time}
           {showFieldNo && match.fieldNumber != null ? ` · Field ${match.fieldNumber}` : ''}
           {groupLabel ? ` · ${groupLabel}` : ''}
         </span>
@@ -233,6 +242,10 @@ export default function MatchCard({
           {editingTime ? (
             <>
               <input type="time" value={timeVal} onChange={e => setTimeVal(e.target.value)}
+                className={`text-xs border rounded-lg px-2 py-1 font-mono focus:outline-none ${
+                  L ? 'bg-white border-gray-300 text-gray-900 focus:border-amber-500' : 'bg-black/50 border-white/20 text-white focus:border-kz'
+                }`} />
+              <input type="date" value={dateVal} onChange={e => setDateVal(e.target.value)}
                 className={`text-xs border rounded-lg px-2 py-1 font-mono focus:outline-none ${
                   L ? 'bg-white border-gray-300 text-gray-900 focus:border-amber-500' : 'bg-black/50 border-white/20 text-white focus:border-kz'
                 }`} />

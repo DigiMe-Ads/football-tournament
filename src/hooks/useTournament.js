@@ -246,8 +246,8 @@ export function useTournament(ageGroup) {
     });
   }, []);
 
-  const updateGroupMatchTime = useCallback(async (matchId, time, fieldNo) => {
-    const update = { time: time ?? null };
+  const updateGroupMatchTime = useCallback(async (matchId, time, fieldNo, date) => {
+    const update = { time: time ?? null, date: date ?? null };
     if (fieldNo !== undefined) update.fieldNumber = fieldNo;
     await updateDoc(doc(db, MATCHES_COL, matchId), update);
   }, []);
@@ -271,9 +271,9 @@ export function useTournament(ageGroup) {
   });
 }, [ageGroup]);
 
-const updateKnockoutMatchTime = useCallback(async (matchId, time, fieldNo) => {
+const updateKnockoutMatchTime = useCallback(async (matchId, time, fieldNo, date) => {
   const docId = matchId.includes('_') ? matchId : `${ageGroup}_${matchId}`;
-  const update = { time: time ?? null };
+  const update = { time: time ?? null, date: date ?? null };
   if (fieldNo !== undefined) update.fieldNumber = fieldNo;
   await updateDoc(doc(db, KNOCKOUT_COL, docId), update);
 }, [ageGroup]);
