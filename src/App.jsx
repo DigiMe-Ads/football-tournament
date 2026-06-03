@@ -385,23 +385,38 @@ export default function App() {
                 {/* ── By Time view ─────────────────────────────────────── */}
                 {groupSort === 'time' && (() => {
                   const sorted = [...groupMatches].sort((a, b) => {
-                    const ta = a.time || ''; const tb = b.time || '';
+                    const ta = (a.date || '') + (a.time || '');
+                    const tb = (b.date || '') + (b.time || '');
                     return ta < tb ? -1 : ta > tb ? 1 : 0;
                   });
 
-                  // Bucket by hour
+                  const hasMultipleDates = new Set(sorted.map(m => m.date || '')).size > 1;
+                  function fmtDate(d) {
+                    if (!d) return '';
+                    const [, mo, dy] = d.split('-');
+                    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                    return `${months[parseInt(mo,10)-1]} ${parseInt(dy,10)}`;
+                  }
+
+                  // Bucket by date+hour
                   const blocks = [];
                   sorted.forEach(m => {
                     const hour = m.time ? m.time.split(':')[0] : '??';
+                    const blockKey = `${m.date || ''}_${hour}`;
                     const last = blocks[blocks.length - 1];
-                    if (last && last.hour === hour) last.matches.push(m);
-                    else blocks.push({ hour, label: `${hour}:00 – ${hour}:59`, matches: [m] });
+                    if (last && last.key === blockKey) {
+                      last.matches.push(m);
+                    } else {
+                      const timeLabel = hour !== '??' ? `${hour}:00 – ${hour}:59` : 'No time set';
+                      const label = hasMultipleDates && m.date ? `${fmtDate(m.date)} · ${timeLabel}` : timeLabel;
+                      blocks.push({ key: blockKey, label, matches: [m] });
+                    }
                   });
 
                   return (
                     <div className="space-y-6">
                       {blocks.map(block => (
-                        <div key={block.hour} className="space-y-3">
+                        <div key={block.key} className="space-y-3">
                           <div className="flex items-center gap-3">
                             <span className="font-mono text-sm font-semibold" style={{ color: scheme.primary }}>
                               {block.label}
