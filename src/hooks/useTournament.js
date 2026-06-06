@@ -377,6 +377,49 @@ const resetKnockoutMatch = useCallback(async (matchId) => {
     await initializeTournament();
   }, [createBackup, initializeTournament]);
 
+  // Deletes and regenerates knockout docs only — group matches and teams untouched
+  const resetKnockoutsOnly = useCallback(async () => {
+    const batch = writeBatch(db);
+
+    const kSnap = await getDocs(query(collection(db, KNOCKOUT_COL), where('ageGroup', '==', ageGroup)));
+    kSnap.docs.forEach(d => batch.delete(d.ref));
+
+    const usedLetters = letters.filter(l => teams.some(t => t.group === l));
+    if (usedLetters.length >= (ageGroup === 'Girls' ? 1 : 2)) {
+      const template = buildKnockoutTemplate(usedLetters, ageGroup);
+      for (const [segKey, segVal] of Object.entries(template)) {
+        for (const round of segVal.rounds) {
+          for (const match of round.matches) {
+            if (!match.id) continue;
+            const docId = `${ageGroup}_${match.id}`;
+            batch.set(doc(db, KNOCKOUT_COL, docId), {
+              id:           match.id,
+              docId,
+              ageGroup,
+              homeSlot:     match.homeSlot  || null,
+              awaySlot:     match.awaySlot  || null,
+              segment:      segKey,
+              segmentLabel: segVal.label,
+              type:         'knockout',
+              homeTeamId:   null,
+              awayTeamId:   null,
+              homeScore:    null,
+              awayScore:    null,
+              penHomeScore: null,
+              penAwayScore: null,
+              penWinner:    null,
+              completed:    false,
+              roundLabel:   round.label,
+              roundId:      round.id,
+            });
+          }
+        }
+      }
+    }
+
+    await batch.commit();
+  }, [teams, ageGroup, letters]);
+
   return {
     teams, groupMatches,
     knockoutMatches: resolvedKnockouts,
@@ -387,7 +430,7 @@ const resetKnockoutMatch = useCallback(async (matchId) => {
     initializeTournament,
     updateGroupMatch, updateGroupMatchTime, resetGroupMatch,
     updateKnockoutMatch, updateKnockoutMatchTime, resetKnockoutMatch,
-    resetAll,            hardReset,
+    resetAll,            hardReset,     resetKnockoutsOnly,
     createBackup, fetchBackups, restoreFromBackup,
   };
 }

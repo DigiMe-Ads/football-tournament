@@ -55,7 +55,7 @@ export default function App() {
     initializeTournament,
     updateGroupMatch, updateGroupMatchTime, resetGroupMatch,
     updateKnockoutMatch, updateKnockoutMatchTime, resetKnockoutMatch,
-    resetAll, hardReset,
+    resetAll, hardReset, resetKnockoutsOnly,
     createBackup, fetchBackups, restoreFromBackup,
   } = useTournament(ageGroup);
 
@@ -122,6 +122,10 @@ export default function App() {
     if (!confirm(`Hard reset ${ageGroup}? Deletes and regenerates all fixtures.`)) return;
     setResetting(true); await hardReset(); setResetting(false);
   }
+  async function handleResetKnockoutsOnly() {
+    if (!confirm(`Reset ${ageGroup} knockouts? Group stage data and scores will not be affected.`)) return;
+    setResetting(true); await resetKnockoutsOnly(); setResetting(false);
+  }
 
   const adminBar = isAdmin && (
     <div
@@ -137,6 +141,16 @@ export default function App() {
           fetchBackups={fetchBackups}
           restoreFromBackup={restoreFromBackup}
         />
+        {ageGroup === 'Girls' && (
+          <button onClick={handleResetKnockoutsOnly} disabled={resetting}
+            className={`text-xs px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-40 ${
+              isLight
+                ? 'bg-pink-100 hover:bg-pink-200 border-pink-300 text-pink-700'
+                : 'bg-pink-900/40 hover:bg-pink-800/60 border-pink-500/30 text-pink-400'
+            }`}>
+            ↺ Reset Knockouts
+          </button>
+        )}
         <button onClick={handleResetAll} disabled={resetting}
           className={`text-xs px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-40 ${
             isLight
@@ -356,7 +370,7 @@ export default function App() {
                       </div>
 
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                        <StandingsTable standings={gStandings} group={letter} scheme={scheme} qualifyTop={ageGroup === 'Girls' ? 4 : 2} isLight={isLight} />
+                        <StandingsTable standings={gStandings} group={letter} scheme={scheme} qualifyTop={2} isGirls={ageGroup === 'Girls'} isLight={isLight} />
                         <div className="space-y-3">
                           {Array.from({ length: maxRound }, (_, i) => i + 1).map(round => {
                             const roundMatches = gMatches.filter(m => m.round === round);

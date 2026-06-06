@@ -1,11 +1,9 @@
-export default function StandingsTable({ standings, group, scheme, qualifyTop = 2, isLight = false }) {
+export default function StandingsTable({ standings, group, scheme, qualifyTop = 2, isGirls = false, isLight = false }) {
   const s = scheme || {
     primary: '#F5A623',
     primaryLight: '#f7bc55',
     primaryDim: 'rgba(43,78,187,0.10)',
   };
-
-  const isGirls = qualifyTop === 4;
 
   // On white background, use the saturated primary for headings (primaryLight is too pale)
   const headingColor = isLight ? s.primary : s.primaryLight;
@@ -93,7 +91,7 @@ export default function StandingsTable({ standings, group, scheme, qualifyTop = 
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full" style={{ background: s.primary }} />
           <span className={`text-xs ${isLight ? 'text-gray-400' : 'text-white/30'}`}>
-            {isGirls ? '1st vs 4th · 2nd vs 3rd → Cup Semi Finals' : '1st–2nd → Cup / Plate'}
+            {isGirls ? '1st–2nd → Cup Semi Finals' : '1st–2nd → Cup / Plate'}
           </span>
         </div>
         {!isGirls && (
