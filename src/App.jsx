@@ -46,6 +46,7 @@ export default function App() {
   const [showLogin,  setShowLogin]  = useState(false);
   const [resetting,  setResetting]  = useState(false);
   const [groupSort,  setGroupSort]  = useState('group'); // 'group' | 'time'
+  const [koSort,     setKoSort]     = useState('bracket'); // 'bracket' | 'time'
 
   const {
     teams, groupMatches, knockoutMatches, knockoutTemplate,
@@ -476,19 +477,117 @@ export default function App() {
               </div>
             ) : (
               <>
-                <KnockoutBracket
-                  segment={tab}
-                  segmentData={knockoutTemplate[tab]}
-                  knockoutMatches={knockoutMatches.filter(m => m.segment === tab)}
-                  isAdmin={isAdmin}
-                  onSave={updateKnockoutMatch}
-                  onReset={resetKnockoutMatch}
-                  onSaveTime={updateKnockoutMatchTime}
-                  teams={teams}
-                  scheme={scheme}
-                  isLight={isLight}
-                  showFieldNo={ageGroup === 'Girls'}
-                />
+                {/* ── Sort toggle ─────────────────────────────────────── */}
+                <div className="flex items-center gap-3">
+                  <div
+                    className="flex gap-0.5 p-0.5 rounded-lg border"
+                    style={{ backgroundColor: bgSubtle, borderColor: bdSubtle }}
+                  >
+                    <button
+                      onClick={() => setKoSort('bracket')}
+                      className="text-xs px-3 py-1.5 rounded-md transition-colors font-medium"
+                      style={{
+                        backgroundColor: koSort === 'bracket' ? bgActive : 'transparent',
+                        color: koSort === 'bracket' ? tPrimary : tMuted,
+                      }}
+                    >
+                      By Bracket
+                    </button>
+                    <button
+                      onClick={() => setKoSort('time')}
+                      className="text-xs px-3 py-1.5 rounded-md transition-colors font-medium"
+                      style={{
+                        backgroundColor: koSort === 'time' ? bgActive : 'transparent',
+                        color: koSort === 'time' ? tPrimary : tMuted,
+                      }}
+                    >
+                      ⏱ By Time
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── By Bracket view ──────────────────────────────────── */}
+                {koSort === 'bracket' && (
+                  <KnockoutBracket
+                    segment={tab}
+                    segmentData={knockoutTemplate[tab]}
+                    knockoutMatches={knockoutMatches.filter(m => m.segment === tab)}
+                    isAdmin={isAdmin}
+                    onSave={updateKnockoutMatch}
+                    onReset={resetKnockoutMatch}
+                    onSaveTime={updateKnockoutMatchTime}
+                    teams={teams}
+                    scheme={scheme}
+                    isLight={isLight}
+                    showFieldNo={ageGroup === 'Girls'}
+                  />
+                )}
+
+                {/* ── By Time view ─────────────────────────────────────── */}
+                {koSort === 'time' && (() => {
+                  const segMatches = knockoutMatches.filter(m => m.segment === tab);
+                  const roundLabels = {};
+                  (knockoutTemplate[tab]?.rounds || []).forEach(r => { roundLabels[r.id] = r.label; });
+
+                  const sorted = [...segMatches].sort((a, b) => {
+                    const ta = (a.date || '') + (a.time || '');
+                    const tb = (b.date || '') + (b.time || '');
+                    return ta < tb ? -1 : ta > tb ? 1 : 0;
+                  });
+
+                  const hasMultipleDates = new Set(sorted.map(m => m.date || '')).size > 1;
+                  function fmtDate(d) {
+                    if (!d) return '';
+                    const [, mo, dy] = d.split('-');
+                    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                    return `${months[parseInt(mo,10)-1]} ${parseInt(dy,10)}`;
+                  }
+
+                  // Bucket by date+hour
+                  const blocks = [];
+                  sorted.forEach(m => {
+                    const hour = m.time ? m.time.split(':')[0] : '??';
+                    const blockKey = `${m.date || ''}_${hour}`;
+                    const last = blocks[blocks.length - 1];
+                    if (last && last.key === blockKey) {
+                      last.matches.push(m);
+                    } else {
+                      const timeLabel = hour !== '??' ? `${hour}:00 – ${hour}:59` : 'No time set';
+                      const label = hasMultipleDates && m.date ? `${fmtDate(m.date)} · ${timeLabel}` : timeLabel;
+                      blocks.push({ key: blockKey, label, matches: [m] });
+                    }
+                  });
+
+                  return (
+                    <div className="space-y-6">
+                      {blocks.map(block => (
+                        <div key={block.key} className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <span className="font-mono text-sm font-semibold" style={{ color: scheme.primary }}>
+                              {block.label}
+                            </span>
+                            <div className="flex-1 h-px" style={{ background: scheme.primaryRing }} />
+                            <span className="text-xs" style={{ color: tFaint }}>
+                              {block.matches.filter(m => m.completed).length}/{block.matches.length} played
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {block.matches.map(match => (
+                              <MatchCard key={match.id} match={match} isAdmin={isAdmin}
+                                onSave={updateKnockoutMatch} onReset={resetKnockoutMatch}
+                                onSaveTime={updateKnockoutMatchTime}
+                                colorScheme={tab} teams={teams}
+                                showTime groupLabel={`${knockoutTemplate[tab]?.label ?? ''} · ${roundLabels[match.roundId] ?? ''}`}
+                                isKnockout={true}
+                                showFieldNo={ageGroup === 'Girls'} />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+
                 <div
                   className="p-4 rounded-xl border text-xs leading-relaxed"
                   style={{ backgroundColor: bgSubtle, borderColor: bdSubtle, color: tSecondary }}

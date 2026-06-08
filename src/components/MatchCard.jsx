@@ -59,7 +59,8 @@ export default function MatchCard({
   const [saving, setSaving] = useState(false);
   const [editingTime, setEditingTime] = useState(false);
   const [timeVal, setTimeVal] = useState('');
-  const [dateVal, setDateVal] = useState('');
+  const [monthVal, setMonthVal] = useState('');
+  const [dayVal, setDayVal] = useState('');
   const [fieldNoVal, setFieldNoVal] = useState('');
 
   const style    = segColors[colorScheme] || segColors.group;
@@ -82,7 +83,12 @@ export default function MatchCard({
 
   function startEditTime() {
     setTimeVal(match.time ?? '');
-    setDateVal(match.date ?? '');
+    if (match.date) {
+      const [, mo, dy] = match.date.split('-');
+      setMonthVal(mo); setDayVal(dy);
+    } else {
+      setMonthVal(''); setDayVal('');
+    }
     setFieldNoVal(match.fieldNumber != null ? String(match.fieldNumber) : '');
     setEditingTime(true);
   }
@@ -90,7 +96,10 @@ export default function MatchCard({
   async function handleTimeSave() {
     if (!onSaveTime) return;
     const fieldNo = showFieldNo ? (fieldNoVal !== '' ? Number(fieldNoVal) : null) : undefined;
-    await onSaveTime(match.id, timeVal || null, fieldNo, dateVal || null);
+    const dateStr = (monthVal !== '' && dayVal !== '')
+      ? `2026-${String(monthVal).padStart(2, '0')}-${String(dayVal).padStart(2, '0')}`
+      : null;
+    await onSaveTime(match.id, timeVal || null, fieldNo, dateStr);
     setEditingTime(false);
   }
 
@@ -245,8 +254,14 @@ export default function MatchCard({
                 className={`text-xs border rounded-lg px-2 py-1 font-mono focus:outline-none ${
                   L ? 'bg-white border-gray-300 text-gray-900 focus:border-amber-500' : 'bg-black/50 border-white/20 text-white focus:border-kz'
                 }`} />
-              <input type="date" value={dateVal} onChange={e => setDateVal(e.target.value)}
-                className={`text-xs border rounded-lg px-2 py-1 font-mono focus:outline-none ${
+              <input type="number" min="1" max="12" value={monthVal} onChange={e => setMonthVal(e.target.value)}
+                placeholder="MM"
+                className={`w-12 text-xs border rounded-lg px-2 py-1 font-mono focus:outline-none ${
+                  L ? 'bg-white border-gray-300 text-gray-900 focus:border-amber-500' : 'bg-black/50 border-white/20 text-white focus:border-kz'
+                }`} />
+              <input type="number" min="1" max="31" value={dayVal} onChange={e => setDayVal(e.target.value)}
+                placeholder="DD"
+                className={`w-12 text-xs border rounded-lg px-2 py-1 font-mono focus:outline-none ${
                   L ? 'bg-white border-gray-300 text-gray-900 focus:border-amber-500' : 'bg-black/50 border-white/20 text-white focus:border-kz'
                 }`} />
               {showFieldNo && (
