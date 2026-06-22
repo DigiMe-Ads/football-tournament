@@ -70,7 +70,7 @@ function FireworkBurst() {
   );
 }
 
-export default function KnockoutBracket({ segment, segmentData, knockoutMatches, isAdmin, onSave, onReset, onSaveTime, teams, scheme, isLight = false, showFieldNo = false }) {
+export default function KnockoutBracket({ segment, segmentData, knockoutMatches, isAdmin, onSave, onReset, onSaveTime, teams, scheme, isLight = false, showFieldNo = false, locked = false }) {
   const style = segStyles[segment];
   if (!segmentData || !style) return null;
 
@@ -145,6 +145,7 @@ export default function KnockoutBracket({ segment, segmentData, knockoutMatches,
                       teams={teams}
                       isKnockout={true}
                       showFieldNo={showFieldNo}
+                      locked={locked}
                     />
                   );
                 })}

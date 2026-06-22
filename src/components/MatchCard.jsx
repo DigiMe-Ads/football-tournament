@@ -48,7 +48,7 @@ export default function MatchCard({
   match, isAdmin, onSave, onReset, onSaveTime,
   colorScheme = 'group', showTime = true,
   teams = [], isKnockout = false,
-  groupLabel = null, showFieldNo = false,
+  groupLabel = null, showFieldNo = false, locked = false,
 }) {
   const [editing, setEditing] = useState(false);
   const [hs,  setHs]  = useState('');
@@ -248,7 +248,11 @@ export default function MatchCard({
       {/* Admin controls */}
       {isAdmin && (
         <div className="mt-2.5 flex justify-center gap-1.5 flex-wrap">
-          {editingTime ? (
+          {locked ? (
+            <span className={`text-xs px-2 py-1 ${L ? 'text-gray-300' : 'text-white/20'}`}>
+              🔒 Tournament ended
+            </span>
+          ) : editingTime ? (
             <>
               <input type="time" value={timeVal} onChange={e => setTimeVal(e.target.value)}
                 className={`text-xs border rounded-lg px-2 py-1 font-mono focus:outline-none ${

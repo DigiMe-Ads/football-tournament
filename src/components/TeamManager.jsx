@@ -25,7 +25,7 @@ const fallback = { border: 'border-gray-200 bg-gray-50', title: 'text-gray-600',
 export default function TeamManager({
   teams, letters, saveTeam, deleteTeam,
   onResetGroup, onResetAllTeams,
-  onGenerateFixtures, initialized,
+  onGenerateFixtures, initialized, locked = false,
 }) {
   const [editingId,  setEditingId]  = useState(null);
   const [draftName,  setDraftName]  = useState('');
@@ -77,11 +77,11 @@ export default function TeamManager({
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={async () => { if (!confirm('Remove ALL teams?')) return; setResettingAll(true); await onResetAllTeams(); setResettingAll(false); }}
-            disabled={resettingAll || teams.length === 0}
+            disabled={locked || resettingAll || teams.length === 0}
             className="text-xs px-3 py-2 rounded-lg bg-red-100 hover:bg-red-200 border border-red-300 text-red-700 transition-colors disabled:opacity-40">
             {resettingAll ? '…' : '✕ Clear All'}
           </button>
-          <button onClick={handleGenerate} disabled={teams.length < 2 || generating}
+          <button onClick={handleGenerate} disabled={locked || teams.length < 2 || generating}
             className={`text-xs px-4 py-2 rounded-xl font-semibold transition-colors disabled:opacity-40 ${
               initialized ? 'bg-orange-600 hover:bg-orange-500 text-white' : 'bg-kz hover:bg-kz-400 text-white'
             }`}>
@@ -90,7 +90,13 @@ export default function TeamManager({
         </div>
       </div>
 
-      {initialized && (
+      {locked && (
+        <div className="px-4 py-2.5 rounded-xl bg-gray-100 border border-gray-300 text-gray-600 text-xs">
+          🔒 Tournament ended — team setup is locked.
+        </div>
+      )}
+
+      {!locked && initialized && (
         <div className="px-4 py-2.5 rounded-xl bg-orange-50 border border-orange-300 text-orange-700 text-xs">
           ⚠ Fixtures exist — editing teams and regenerating will reset all scores.
         </div>
@@ -111,7 +117,7 @@ export default function TeamManager({
                   <span className="text-gray-400 text-xs">{gTeams.length} team{gTeams.length !== 1 ? 's' : ''}</span>
                   {gTeams.length > 0 && (
                     <button onClick={async () => { if (!confirm(`Clear Group ${g}?`)) return; setResettingG(g); await onResetGroup(g); setResettingG(null); }}
-                      disabled={isResetting}
+                      disabled={locked || isResetting}
                       className={`text-xs px-2 py-1 rounded-lg border transition-colors ${st.btn} disabled:opacity-40`}>
                       {isResetting ? '…' : '↺'}
                     </button>
@@ -135,7 +141,7 @@ export default function TeamManager({
                         <button onClick={() => saveEdit(team)} className="text-kz hover:text-kz-400 text-sm px-1">✓</button>
                         <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600 text-sm px-1">✕</button>
                       </div>
-                    ) : (
+                    ) : !locked && (
                       <div className="flex gap-0.5 shrink-0">
                         <button onClick={() => { setEditingId(team.id); setDraftName(team.name); }}
                           className="text-gray-300 hover:text-gray-600 text-xs px-1.5 py-1 rounded hover:bg-gray-100 transition-colors">✎</button>
@@ -157,7 +163,7 @@ export default function TeamManager({
                     className="bg-kz hover:bg-kz-400 disabled:opacity-40 text-white text-xs px-3 py-1.5 rounded-lg transition-colors shrink-0">Add</button>
                   <button onClick={() => { setAdding(null); setNewName(''); }} className="text-gray-400 hover:text-gray-600 text-xs px-1.5">✕</button>
                 </div>
-              ) : (
+              ) : !locked && (
                 <button onClick={() => { setAdding(g); setNewName(''); }}
                   className="w-full text-left text-gray-400 hover:text-gray-600 text-xs py-2 px-3 border border-dashed border-gray-300 hover:border-gray-400 rounded-lg transition-colors">
                   + Add team to Group {g}

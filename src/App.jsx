@@ -40,7 +40,7 @@ function getChampion(finalId, knockoutMatches, teams) {
 }
 
 export default function App() {
-  const { isAdmin, logout } = useAuth();
+  const { isAdmin, logout, tournamentOver, setTournamentOver } = useAuth();
   const [ageGroup,   setAgeGroup]   = useState('U10');
   const [tab,        setTab]        = useState('groups');
   const [showLogin,  setShowLogin]  = useState(false);
@@ -116,16 +116,30 @@ export default function App() {
   }
 
   async function handleResetAll() {
+    if (tournamentOver) return;
     if (!confirm(`Reset ALL scores for ${ageGroup}?`)) return;
     setResetting(true); await resetAll(); setResetting(false);
   }
   async function handleHardReset() {
+    if (tournamentOver) return;
     if (!confirm(`Hard reset ${ageGroup}? Deletes and regenerates all fixtures.`)) return;
     setResetting(true); await hardReset(); setResetting(false);
   }
   async function handleResetKnockoutsOnly() {
+    if (tournamentOver) return;
     if (!confirm(`Reset ${ageGroup} knockouts? Group stage data and scores will not be affected.`)) return;
     setResetting(true); await resetKnockoutsOnly(); setResetting(false);
+  }
+  async function handleToggleTournament() {
+    if (tournamentOver) {
+      if (!confirm('Resume the tournament? This unlocks admin controls again.')) return;
+    } else {
+      if (!confirm(
+        'End the tournament?\n\nThis freezes every admin control (scores, teams, backups) across all age groups. ' +
+        'Nothing is deleted and viewers are unaffected. You can resume later if needed.'
+      )) return;
+    }
+    await setTournamentOver(!tournamentOver);
   }
 
   const adminBar = isAdmin && (
@@ -141,9 +155,11 @@ export default function App() {
           createBackup={createBackup}
           fetchBackups={fetchBackups}
           restoreFromBackup={restoreFromBackup}
+          locked={tournamentOver}
         />
         {ageGroup === 'Girls' && (
-          <button onClick={handleResetKnockoutsOnly} disabled={resetting}
+          <button onClick={handleResetKnockoutsOnly} disabled={resetting || tournamentOver}
+            title={tournamentOver ? 'Tournament ended — locked' : undefined}
             className={`text-xs px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-40 ${
               isLight
                 ? 'bg-pink-100 hover:bg-pink-200 border-pink-300 text-pink-700'
@@ -152,7 +168,8 @@ export default function App() {
             ↺ Reset Knockouts
           </button>
         )}
-        <button onClick={handleResetAll} disabled={resetting}
+        <button onClick={handleResetAll} disabled={resetting || tournamentOver}
+          title={tournamentOver ? 'Tournament ended — locked' : undefined}
           className={`text-xs px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-40 ${
             isLight
               ? 'bg-orange-100 hover:bg-orange-200 border-orange-300 text-orange-700'
@@ -160,7 +177,8 @@ export default function App() {
           }`}>
           ↺ Reset Scores
         </button>
-        <button onClick={handleHardReset} disabled={resetting}
+        <button onClick={handleHardReset} disabled={resetting || tournamentOver}
+          title={tournamentOver ? 'Tournament ended — locked' : undefined}
           className={`text-xs px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-40 ${
             isLight
               ? 'bg-red-100 hover:bg-red-200 border-red-300 text-red-700'
@@ -229,6 +247,18 @@ export default function App() {
 
             {isAdmin ? (
               <div className="flex items-center gap-1.5">
+                <button onClick={handleToggleTournament}
+                  className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
+                    tournamentOver
+                      ? (isLight
+                          ? 'bg-emerald-100 hover:bg-emerald-200 border-emerald-300 text-emerald-700'
+                          : 'bg-emerald-900/40 hover:bg-emerald-800/60 border-emerald-500/30 text-emerald-400')
+                      : (isLight
+                          ? 'bg-red-100 hover:bg-red-200 border-red-300 text-red-700'
+                          : 'bg-red-900/40 hover:bg-red-800/60 border-red-500/30 text-red-400')
+                  }`}>
+                  {tournamentOver ? '🔓 Resume' : '🔒 End Tournament'}
+                </button>
                 <span
                   className="hidden sm:block text-xs rounded-full px-2 py-0.5 border"
                   style={{ color: tMuted, borderColor: bdSubtle }}
@@ -288,6 +318,14 @@ export default function App() {
           </h2>
         </div>
 
+        {/* Tournament-ended banner (admin only) */}
+        {isAdmin && tournamentOver && (
+          <div className="mb-6 px-4 py-3 rounded-xl border text-sm text-center"
+            style={{ backgroundColor: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.3)', color: '#b91c1c' }}>
+            🔒 Tournament ended — all admin controls are locked. Data is safe and untouched. Click <strong>Resume</strong> above to make changes again.
+          </div>
+        )}
+
         {/* Setup tab */}
         {tab === 'setup' && isAdmin && (
           <div className="fade-up">
@@ -300,6 +338,7 @@ export default function App() {
               onResetAllTeams={resetAllTeams}
               onGenerateFixtures={initializeTournament}
               initialized={initialized}
+              locked={tournamentOver}
             />
           </div>
         )}
@@ -385,7 +424,8 @@ export default function App() {
                                       onSave={updateGroupMatch} onReset={resetGroupMatch}
                                       onSaveTime={updateGroupMatchTime}
                                       colorScheme="group" teams={teams}
-                                      showTime showFieldNo={ageGroup === 'Girls'} />
+                                      showTime showFieldNo={ageGroup === 'Girls'}
+                                      locked={tournamentOver} />
                                   ))}
                                 </div>
                               </div>
@@ -448,7 +488,8 @@ export default function App() {
                                 onSaveTime={updateGroupMatchTime}
                                 colorScheme="group" teams={teams}
                                 showTime groupLabel={`Grp ${match.group}`}
-                                showFieldNo={ageGroup === 'Girls'} />
+                                showFieldNo={ageGroup === 'Girls'}
+                                locked={tournamentOver} />
                             ))}
                           </div>
                         </div>
@@ -520,6 +561,7 @@ export default function App() {
                     scheme={scheme}
                     isLight={isLight}
                     showFieldNo={ageGroup === 'Girls'}
+                    locked={tournamentOver}
                   />
                 )}
 
@@ -579,7 +621,8 @@ export default function App() {
                                 colorScheme={tab} teams={teams}
                                 showTime groupLabel={`${knockoutTemplate[tab]?.label ?? ''} · ${roundLabels[match.roundId] ?? ''}`}
                                 isKnockout={true}
-                                showFieldNo={ageGroup === 'Girls'} />
+                                showFieldNo={ageGroup === 'Girls'}
+                                locked={tournamentOver} />
                             ))}
                           </div>
                         </div>

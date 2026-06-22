@@ -10,7 +10,7 @@ function formatTs(ts) {
 }
 
 // BackupRestorePanel is admin-only — always renders on the white admin background
-export default function BackupRestorePanel({ ageGroup, createBackup, fetchBackups, restoreFromBackup, scheme }) {
+export default function BackupRestorePanel({ ageGroup, createBackup, fetchBackups, restoreFromBackup, scheme, locked = false }) {
   const [open,          setOpen]          = useState(false);
   const [backups,       setBackups]       = useState([]);
   const [loadingList,   setLoadingList]   = useState(false);
@@ -34,6 +34,7 @@ export default function BackupRestorePanel({ ageGroup, createBackup, fetchBackup
   }
 
   async function handleSave() {
+    if (locked) return;
     setSaving(true);
     setSaveStatus('idle');
     try {
@@ -49,6 +50,7 @@ export default function BackupRestorePanel({ ageGroup, createBackup, fetchBackup
   }
 
   async function handleRestore(backup) {
+    if (locked) return;
     const timeStr = formatTs(backup.timestamp);
     if (!confirm(
       `Restore "${backup.label}" saved at ${timeStr}?\n\n` +
@@ -91,7 +93,8 @@ export default function BackupRestorePanel({ ageGroup, createBackup, fetchBackup
         <div className="flex items-center gap-2">
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={locked || saving}
+            title={locked ? 'Tournament ended — locked' : undefined}
             className="text-xs px-3 py-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 text-emerald-700 transition-colors disabled:opacity-40 flex items-center gap-1"
           >
             {saving ? <span className="animate-spin inline-block">⟳</span> : '💾'}
@@ -136,7 +139,8 @@ export default function BackupRestorePanel({ ageGroup, createBackup, fetchBackup
                   </div>
                   <button
                     onClick={() => handleRestore(b)}
-                    disabled={!!restoringId}
+                    disabled={locked || !!restoringId}
+                    title={locked ? 'Tournament ended — locked' : undefined}
                     className="shrink-0 text-xs px-3 py-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 border border-indigo-300 text-indigo-700 transition-colors disabled:opacity-40 flex items-center gap-1"
                   >
                     {isRestoring
